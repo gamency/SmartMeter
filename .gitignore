@@ -23,7 +23,7 @@ local.properties
 .DS_Store
 
 # Gradle wrapper（可选保留，但 jar 文件很大，建议忽略）
-gradle/wrapper/gradle-wrapper.jar
+#gradle/wrapper/gradle-wrapper.jar
 
 # 所有 .apk 和 .aab 安装包
 *.aab
