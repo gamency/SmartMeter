@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
@@ -94,6 +93,13 @@ public class MainActivity extends AppCompatActivity {
         TextView distributionMore = findViewById(R.id.distribution_more);
         distributionMore.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, DistributionActivity.class);
+            startActivity(intent);
+        });
+
+        // ===== 智能抄表入口点击 =====
+        CardView smartEntry = findViewById(R.id.smart_entry_card);
+        smartEntry.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, SmartPhotoActivity.class);
             startActivity(intent);
         });
 

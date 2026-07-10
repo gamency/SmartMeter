@@ -11,7 +11,33 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- 日期选择栏 -->
+        <!-- 标题 + 更新时间 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="📊 用电概览"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="#1A1A2E" />
+
+            <TextView
+                android:id="@+id/update_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="更新中..."
+                android:textSize="11sp"
+                android:textColor="#9CA3AF" />
+        </LinearLayout>
+
+        <!-- 日期选择器 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -47,36 +73,9 @@
                 android:padding="8dp"
                 android:clickable="true"
                 android:focusable="true" />
-
         </LinearLayout>
 
-        <!-- 标题 + 更新时间 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="📊 用电概览"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:textColor="#1A1A2E" />
-
-            <TextView
-                android:id="@+id/update_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="更新中..."
-                android:textSize="11sp"
-                android:textColor="#9CA3AF" />
-        </LinearLayout>
-
-        <!-- 核心指标 3 卡片 -->
+        <!-- 核心指标：3 个卡片 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -208,7 +207,64 @@
             </androidx.cardview.widget.CardView>
         </LinearLayout>
 
-        <!-- 用电支出概览 -->
+        <!-- 智能抄表入口卡片 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="3dp"
+            app:cardBackgroundColor="#FFFFFF"
+            android:clickable="true"
+            android:focusable="true"
+            android:id="@+id/smart_entry_card">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📷"
+                    android:textSize="28sp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="智能抄表"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#1A1A2E" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="拍照识别电表读数，离线同步"
+                        android:textSize="12sp"
+                        android:textColor="#9CA3AF" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="→"
+                    android:textSize="20sp"
+                    android:textColor="#4A6CF7" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- 用电支出概览（房东 vs 租户） -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -305,7 +361,7 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- 用电分布 -->
+        <!-- 用电分布（条形图） -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -366,7 +422,7 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- 近7天趋势 -->
+        <!-- 近7天用电趋势 -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
