@@ -1,0 +1,33 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Android 自动生成的文件
+*.iml
+.gradle/
+.idea/
+build/
+local.properties
+.DS_Store
+
+# Gradle wrapper（可选保留，但 jar 文件很大，建议忽略）
+gradle/wrapper/gradle-wrapper.jar
+
+# 所有 .apk 和 .aab 安装包
+*.aab
+
+# 缓存文件
+.cache/
+.ksp/
