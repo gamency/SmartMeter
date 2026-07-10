@@ -15,6 +15,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -43,7 +44,8 @@ import okhttp3.Response;
 public class SmartPhotoActivity extends AppCompatActivity {
 
     private static final int REQUEST_CAMERA = 100;
-    private static final int REQUEST_PERMISSION = 101;
+    private static final int REQUEST_FILE_PICKER = 101;
+    private static final int REQUEST_PERMISSION = 102;
     private static final String PHOTO_FILE_PROVIDER = "com.example.smartmeter.fileprovider";
 
     private Spinner roomSpinner;
@@ -129,9 +131,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
     }
 
     private void updateLastReading(int roomId) {
-        // 从本地数据库或内存中获取，简化：直接显示占位
         lastReadingText.setText("上月: --");
-        // 实际可调用后端 /api/room_last_reading 接口
     }
 
     private void loadPendingList() {
@@ -151,8 +151,11 @@ public class SmartPhotoActivity extends AppCompatActivity {
         }).start();
     }
 
-    // 权限检查和拍照
     private void checkPermissionAndTakePhoto() {
+        if (selectedRoomId == -1) {
+            Toast.makeText(this, "请先选择房间", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -175,21 +178,29 @@ public class SmartPhotoActivity extends AppCompatActivity {
         }
     }
 
+    // ===== 核心拍照逻辑 =====
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            File photoFile = null;
-            try {
-                photoFile = createImageFile();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
+        try {
+            File photoFile = createImageFile();
             if (photoFile != null) {
                 Uri photoURI = FileProvider.getUriForFile(this, PHOTO_FILE_PROVIDER, photoFile);
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                 startActivityForResult(takePictureIntent, REQUEST_CAMERA);
+            } else {
+                openGallery();
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "无法启动相机，切换到相册选择", Toast.LENGTH_SHORT).show();
+            openGallery();
         }
+    }
+
+    private void openGallery() {
+        Intent pickIntent = new Intent(Intent.ACTION_GET_CONTENT);
+        pickIntent.setType("image/*");
+        startActivityForResult(Intent.createChooser(pickIntent, "选择电表照片"), REQUEST_FILE_PICKER);
     }
 
     private File createImageFile() throws IOException {
@@ -202,39 +213,72 @@ public class SmartPhotoActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CAMERA && resultCode == RESULT_OK) {
-            // 拍照成功，保存到数据库
-            if (selectedRoomId == -1) {
-                Toast.makeText(this, "请选择房间", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            String roomName = roomList.stream().filter(r -> r.getId() == selectedRoomId).findFirst().map(RoomItem::getName).orElse("");
-            // 计算归属时间点（这里简化为默认12:00，实际可传入当前时间）
-            int pointId = 3; // 12:00
-            String timeLabel = "中午休息";
-
-            SmartReadingEntity entity = new SmartReadingEntity(
-                    selectedRoomId,
-                    roomName,
-                    new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date()),
-                    new SimpleDateFormat("HH:mm", Locale.CHINA).format(new Date()),
-                    pointId,
-                    timeLabel,
-                    currentPhotoPath,
-                    0, // 手动输入值，0 表示待AI识别
-                    "pending",
-                    false
-            );
-            new Thread(() -> {
-                db.smartReadingDao().insert(entity);
-                runOnUiThread(() -> {
-                    Toast.makeText(this, "已保存", Toast.LENGTH_SHORT).show();
-                    loadPendingList();
-                });
-            }).start();
+        if (resultCode != RESULT_OK) {
+            return;
         }
+        String photoPath = null;
+        if (requestCode == REQUEST_CAMERA) {
+            photoPath = currentPhotoPath;
+        } else if (requestCode == REQUEST_FILE_PICKER) {
+            if (data != null && data.getData() != null) {
+                Uri selectedUri = data.getData();
+                try {
+                    String[] projection = {MediaStore.Images.Media.DATA};
+                    Cursor cursor = getContentResolver().query(selectedUri, projection, null, null, null);
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+                        photoPath = cursor.getString(columnIndex);
+                        cursor.close();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Toast.makeText(this, "无法读取图片", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+        }
+        if (photoPath == null || photoPath.isEmpty()) {
+            Toast.makeText(this, "未获取到图片", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // 保存到数据库
+        String roomName = roomList.stream()
+                .filter(r -> r.getId() == selectedRoomId)
+                .findFirst()
+                .map(RoomItem::getName)
+                .orElse("");
+        int hour = new Date().getHours();
+        int pointId;
+        String timeLabel;
+        if (hour >= 0 && hour < 5) { pointId = 0; timeLabel = "夜间"; }
+        else if (hour >= 5 && hour < 11) { pointId = 10; timeLabel = "上午"; }
+        else if (hour >= 11 && hour < 13) { pointId = 12; timeLabel = "中午"; }
+        else if (hour >= 13 && hour < 16) { pointId = 15; timeLabel = "下午"; }
+        else if (hour >= 16 && hour < 19) { pointId = 18; timeLabel = "傍晚"; }
+        else if (hour >= 19 && hour < 22) { pointId = 21; timeLabel = "晚上"; }
+        else { pointId = 24; timeLabel = "深夜"; }
+
+        SmartReadingEntity entity = new SmartReadingEntity(
+                selectedRoomId,
+                roomName,
+                new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date()),
+                new SimpleDateFormat("HH:mm", Locale.CHINA).format(new Date()),
+                pointId,
+                timeLabel,
+                photoPath,
+                0,
+                "pending",
+                false
+        );
+        new Thread(() -> {
+            db.smartReadingDao().insert(entity);
+            runOnUiThread(() -> {
+                Toast.makeText(this, "已保存", Toast.LENGTH_SHORT).show();
+                loadPendingList();
+            });
+        }).start();
     }
 
     // ===== 同步功能 =====
@@ -245,7 +289,6 @@ public class SmartPhotoActivity extends AppCompatActivity {
                 runOnUiThread(() -> Toast.makeText(this, "没有待同步的记录", Toast.LENGTH_SHORT).show());
                 return;
             }
-            // 构建请求体
             JSONArray recordsArray = new JSONArray();
             for (SmartReadingEntity entity : pending) {
                 try {
@@ -257,7 +300,6 @@ public class SmartPhotoActivity extends AppCompatActivity {
                     obj.put("point_id", entity.pointId);
                     obj.put("time_label", entity.timeLabel);
                     obj.put("manual_reading", entity.isManual ? entity.manualReading : JSONObject.NULL);
-                    // 读取照片文件转为 base64
                     File file = new File(entity.photoPath);
                     if (file.exists()) {
                         byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
@@ -292,12 +334,10 @@ public class SmartPhotoActivity extends AppCompatActivity {
                     String batchId = result.getString("batch_id");
                     JSONArray resultsArray = result.getJSONArray("results");
 
-                    // 更新本地记录状态为 synced，并保存 batchId 和服务端返回的 ID
                     for (int i = 0; i < resultsArray.length(); i++) {
                         JSONObject res = resultsArray.getJSONObject(i);
                         String localId = res.getString("local_id");
                         long id = Long.parseLong(localId);
-                        int serverId = res.optInt("id", 0);
                         for (SmartReadingEntity entity : pending) {
                             if (entity.id == id) {
                                 entity.status = "synced";
@@ -311,7 +351,6 @@ public class SmartPhotoActivity extends AppCompatActivity {
                     runOnUiThread(() -> {
                         Toast.makeText(this, "同步成功！共 " + resultsArray.length() + " 条", Toast.LENGTH_SHORT).show();
                         loadPendingList();
-                        // 跳转到复核页面
                         Intent intent = new Intent(SmartPhotoActivity.this, SmartReviewActivity.class);
                         intent.putExtra("batchId", batchId);
                         startActivity(intent);
