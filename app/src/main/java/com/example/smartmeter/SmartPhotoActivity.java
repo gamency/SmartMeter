@@ -252,13 +252,13 @@ public class SmartPhotoActivity extends AppCompatActivity {
         int hour = new Date().getHours();
         int pointId;
         String timeLabel;
-        if (hour >= 0 && hour < 5) { pointId = 0; timeLabel = "夜间"; }
-        else if (hour >= 5 && hour < 11) { pointId = 10; timeLabel = "上午"; }
-        else if (hour >= 11 && hour < 13) { pointId = 12; timeLabel = "中午"; }
-        else if (hour >= 13 && hour < 16) { pointId = 15; timeLabel = "下午"; }
-        else if (hour >= 16 && hour < 19) { pointId = 18; timeLabel = "傍晚"; }
-        else if (hour >= 19 && hour < 22) { pointId = 21; timeLabel = "晚上"; }
-        else { pointId = 24; timeLabel = "深夜"; }
+        if (hour >= 0 && hour < 5) { pointId = 1; timeLabel = "夜间"; }
+        else if (hour >= 5 && hour < 11) { pointId = 2; timeLabel = "上午"; }
+        else if (hour >= 11 && hour < 13) { pointId = 3; timeLabel = "中午"; }
+        else if (hour >= 13 && hour < 16) { pointId = 4; timeLabel = "下午"; }
+        else if (hour >= 16 && hour < 19) { pointId = 5; timeLabel = "傍晚"; }
+        else if (hour >= 19 && hour < 22) { pointId = 6; timeLabel = "晚上"; }
+        else { pointId = 7; timeLabel = "深夜"; }
 
         SmartReadingEntity entity = new SmartReadingEntity(
                 selectedRoomId,
