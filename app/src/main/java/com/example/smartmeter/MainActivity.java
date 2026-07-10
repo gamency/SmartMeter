@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -49,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
             0xFF4A6CF7, 0xFF22C55E, 0xFFF59E0B, 0xFFEF4444,
             0xFF8B5CF6, 0xFFEC4899, 0xFF14B8A6
     };
+    private SwipeRefreshLayout swipeRefresh;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,6 +106,19 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // 加载数据
+        refreshAllData();
+        // 下拉刷新
+        swipeRefresh = findViewById(R.id.swipe_refresh);
+        swipeRefresh.setOnRefreshListener(() -> {
+            refreshAllData();
+            swipeRefresh.setRefreshing(false);
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 每次回到前台刷新数据（避免频繁请求，加一个防抖或判断）
         refreshAllData();
     }
 
