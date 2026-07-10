@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:orientation="vertical"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:id="@+id/trend_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="12"
+        android:textSize="10sp"
+        android:textColor="#64748B" />
+
+    <View
+        android:id="@+id/trend_fill"
+        android:layout_width="16dp"
+        android:layout_height="20dp"
+        android:background="#4A6CF7" />
+
+    <TextView
+        android:id="@+id/trend_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="07-10"
+        android:textSize="10sp"
+        android:textColor="#9CA3AF"
+        android:layout_marginTop="4dp" />
+
+</LinearLayout>

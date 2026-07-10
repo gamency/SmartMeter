@@ -1,4 +1,4 @@
-package com.example.smartmeterapp
+package com.example.smartmeter
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

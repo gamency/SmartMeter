@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.smartmeterapp"
+    namespace = "com.example.smartmeter"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1

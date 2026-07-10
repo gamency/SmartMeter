@@ -1,4 +1,4 @@
-package com.example.smartmeterapp
+package com.example.smartmeter
 
 import org.junit.Test
 
