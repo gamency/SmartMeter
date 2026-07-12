@@ -9,6 +9,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -39,18 +40,22 @@ public class MainActivity extends AppCompatActivity {
     private TextView landlordCost, landlordChange, tenantCost, tenantChange;
     private TextView periodText;
     private LinearLayout distributionContainer, trendContainer;
-    private TextView distributionEmpty, trendEmpty;
+    private TextView distributionEmpty, trendEmpty, distributionTotal, totalCheck;
     private RecyclerView roomRecyclerView;
     private RoomAdapter roomAdapter;
+    private SwipeRefreshLayout swipeRefresh;
 
     // 日期变量
     private String periodStart = "";
     private String periodEnd = "";
-    private final int[] barColors = {
-            0xFF4A6CF7, 0xFF22C55E, 0xFFF59E0B, 0xFFEF4444,
-            0xFF8B5CF6, 0xFFEC4899, 0xFF14B8A6
+    private long lastRefreshTime = 0;
+
+    // ===== 柔和分户色板（马卡龙色系） =====
+    private final int[] roomColors = {
+            R.color.room_1, R.color.room_2, R.color.room_3, R.color.room_4,
+            R.color.room_5, R.color.room_6, R.color.room_7, R.color.room_8,
+            R.color.room_9, R.color.room_10
     };
-    private SwipeRefreshLayout swipeRefresh;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,8 +76,11 @@ public class MainActivity extends AppCompatActivity {
         trendContainer = findViewById(R.id.trend_container);
         distributionEmpty = findViewById(R.id.distribution_empty);
         trendEmpty = findViewById(R.id.trend_empty);
+        distributionTotal = findViewById(R.id.distribution_total);
+        totalCheck = findViewById(R.id.total_check);
         roomRecyclerView = findViewById(R.id.roomRecyclerView);
         periodText = findViewById(R.id.period_text);
+        swipeRefresh = findViewById(R.id.swipe_refresh);
 
         roomRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -87,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
         // 更新时间
         updateTime.setText("更新于 " + new SimpleDateFormat("HH:mm", Locale.CHINA).format(new Date()));
 
-        // ===== 日期选择点击 =====
+        // ===== 日期选择 =====
         TextView changePeriod = findViewById(R.id.change_period);
         changePeriod.setOnClickListener(v -> showDatePickerDialog());
 
@@ -98,28 +106,32 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // ===== 智能抄表入口点击 =====
+        // ===== 智能抄表入口 =====
         CardView smartEntry = findViewById(R.id.smart_entry_card);
         smartEntry.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, SmartPhotoActivity.class);
             startActivity(intent);
         });
 
-        // 加载数据
-        refreshAllData();
-        // 下拉刷新
-        swipeRefresh = findViewById(R.id.swipe_refresh);
+        // ===== 下拉刷新 =====
         swipeRefresh.setOnRefreshListener(() -> {
             refreshAllData();
             swipeRefresh.setRefreshing(false);
         });
+
+        // 加载数据
+        refreshAllData();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // 每次回到前台刷新数据（避免频繁请求，加一个防抖或判断）
-        refreshAllData();
+        // 每次回到前台刷新数据（60秒防抖）
+        long now = System.currentTimeMillis();
+        if (now - lastRefreshTime > 60000) {
+            refreshAllData();
+            lastRefreshTime = now;
+        }
     }
 
     // ===== 日期选择对话框 =====
@@ -177,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
                     String tenantStatus = json.optString("tenant_status", "same");
 
                     runOnUiThread(() -> {
+                        // 更新主卡片
                         cardCrossValue.setText(String.format("%.1f", totalCross));
                         cardCostValue.setText(String.format("%.1f", totalCost));
                         cardDiffValue.setText(String.format("%.1f", diff));
@@ -190,6 +203,7 @@ public class MainActivity extends AppCompatActivity {
                             cardDiffLabel.setText("平衡");
                         }
 
+                        // 房东承担
                         landlordCost.setText(String.format("%.1f", landlordCostVal));
                         if ("up".equals(landlordStatus)) {
                             landlordChange.setText("↑ +" + landlordDiff + " 度");
@@ -201,6 +215,7 @@ public class MainActivity extends AppCompatActivity {
                             landlordChange.setText("持平");
                         }
 
+                        // 租户承担
                         tenantCost.setText(String.format("%.1f", tenantCostVal));
                         if ("up".equals(tenantStatus)) {
                             tenantChange.setText("↑ +" + tenantDiff + " 度");
@@ -211,6 +226,12 @@ public class MainActivity extends AppCompatActivity {
                         } else {
                             tenantChange.setText("持平");
                         }
+
+                        // 更新汇总校验行
+                        double total = landlordCostVal + tenantCostVal;
+                        totalCheck.setText("本期总电费 " + String.format("%.1f", totalCost) +
+                                " 元 = 房东 " + String.format("%.1f", landlordCostVal) +
+                                " 元 + 租户 " + String.format("%.1f", tenantCostVal) + " 元");
                     });
                 }
             } catch (Exception e) {
@@ -258,7 +279,7 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-    // ===== API：用电分布 =====
+    // ===== API：用电分布（含汇总校验） =====
     private void fetchDistribution() {
         new Thread(() -> {
             try {
@@ -289,30 +310,38 @@ public class MainActivity extends AppCompatActivity {
                                 obj.optDouble("price", 0)
                         ));
                     }
-                    double finalMaxKwh = maxKwh;
+                    double finalMaxKwh = maxKwh > 0 ? maxKwh : 1;
+                    double finalTotalKwh = items.stream().mapToDouble(RoomItem::getTotalKwh).sum();
                     runOnUiThread(() -> {
                         distributionContainer.removeAllViews();
                         if (items.isEmpty() || finalMaxKwh == 0) {
                             distributionEmpty.setVisibility(View.VISIBLE);
+                            distributionTotal.setText("暂无数据");
                             return;
                         }
                         distributionEmpty.setVisibility(View.GONE);
                         items.sort((a, b) -> Double.compare(b.getTotalKwh(), a.getTotalKwh()));
                         int count = Math.min(items.size(), 10);
+
                         for (int i = 0; i < count; i++) {
                             RoomItem item = items.get(i);
                             double ratio = item.getTotalKwh() / finalMaxKwh;
-                            int color = barColors[i % barColors.length];
+                            int colorResId = roomColors[i % roomColors.length];
+
                             View barView = getLayoutInflater().inflate(R.layout.item_distribution_bar, null);
                             TextView nameView = barView.findViewById(R.id.bar_name);
                             View barFill = barView.findViewById(R.id.bar_fill);
                             TextView valueView = barView.findViewById(R.id.bar_value);
+
                             nameView.setText(item.getName());
-                            barFill.setBackgroundColor(color);
+                            barFill.setBackgroundColor(ContextCompat.getColor(MainActivity.this, colorResId));
                             barFill.getLayoutParams().width = (int) (ratio * 300) + 20;
                             valueView.setText(String.format("%.1f", item.getTotalKwh()));
                             distributionContainer.addView(barView);
                         }
+
+                        // 更新汇总校验
+                        distributionTotal.setText("分户用电合计：" + String.format("%.1f", finalTotalKwh) + " 度");
                     });
                 }
             } catch (Exception e) {
@@ -374,6 +403,7 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
+    // ===== 内部类：趋势数据 =====
     private static class TrendItem {
         String date;
         double value;

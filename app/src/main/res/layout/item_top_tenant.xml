@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingVertical="12dp"
+    android:background="?android:attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- 房号+姓名 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_room_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="201室"
+            style="@style/TextBody"
+            android:textColor="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/tv_tenant_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="张三"
+            style="@style/TextSmall" />
+    </LinearLayout>
+
+    <!-- 用电量 -->
+    <TextView
+        android:id="@+id/tv_usage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="23.5 度"
+        style="@style/TextBody"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary" />
+
+    <!-- 异常标签（可选） -->
+    <TextView
+        android:id="@+id/tv_warning"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="异常高耗电"
+        android:textSize="11sp"
+        android:textColor="@color/warning_orange"
+        android:background="@color/warning_orange_light"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="2dp"
+        android:radius="4dp"
+        android:visibility="gone"
+        android:layout_marginStart="12dp" />
+
+</LinearLayout>

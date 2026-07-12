@@ -3,20 +3,20 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="12dp"
-    android:background="#FFFFFF"
-    android:elevation="1dp"
-    android:layout_marginBottom="4dp"
+    android:padding="10dp"
+    android:background="@color/white"
+    android:layout_marginBottom="2dp"
+    android:elevation="0dp"
     android:gravity="center_vertical">
 
     <TextView
         android:id="@+id/rank"
-        android:layout_width="32dp"
+        android:layout_width="24dp"
         android:layout_height="wrap_content"
         android:text="1"
-        android:textSize="14sp"
+        android:textSize="12sp"
         android:textStyle="bold"
-        android:textColor="#64748B"
+        android:textColor="@color/gray_500"
         android:gravity="center" />
 
     <TextView
@@ -27,15 +27,16 @@
         android:text="201室"
         android:textSize="15sp"
         android:textStyle="bold"
-        android:textColor="#1A1A2E" />
+        android:textColor="@color/gray_900"
+        android:layout_marginStart="8dp" />
 
     <TextView
         android:id="@+id/room_info"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="1层 · 分户出租"
-        android:textSize="12sp"
-        android:textColor="#9CA3AF"
+        android:text="1层 · 分户"
+        android:textSize="11sp"
+        android:textColor="@color/gray_500"
         android:layout_marginEnd="12dp" />
 
     <TextView
@@ -43,8 +44,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="12.5 度"
-        android:textSize="16sp"
+        android:textSize="15sp"
         android:textStyle="bold"
-        android:textColor="#4A6CF7" />
+        android:textColor="@color/primary_blue" />
 
 </LinearLayout>
