@@ -6,7 +6,7 @@
     android:orientation="vertical"
     android:background="@color/bg_page">
 
-    <!-- ===== 顶部悬浮导航 ===== -->
+    <!-- 顶部悬浮导航 -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -30,7 +30,6 @@
             android:layout_gravity="center_vertical|end"
             android:src="@drawable/ic_more"
             android:padding="4dp" />
-
     </FrameLayout>
 
     <!-- 分割线 -->
@@ -39,7 +38,7 @@
         android:layout_height="1dp"
         android:background="@color/divider" />
 
-    <!-- ===== 可滚动内容 ===== -->
+    <!-- 可滚动内容 -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -197,7 +196,6 @@
                         android:orientation="horizontal"
                         android:weightSum="2">
 
-                        <!-- 左：租户承担 -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -221,13 +219,11 @@
                                 style="@style/TextSmall" />
                         </LinearLayout>
 
-                        <!-- 分割线 -->
                         <View
                             android:layout_width="1dp"
                             android:layout_height="match_parent"
                             android:background="@color/divider" />
 
-                        <!-- 右：房东自付（浅蓝底色） -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -256,7 +252,6 @@
 
                     </LinearLayout>
 
-                    <!-- 底部细分割线 -->
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
@@ -328,7 +323,6 @@
                             style="@style/TextBody" />
                     </LinearLayout>
 
-                    <!-- 差值行 -->
                     <LinearLayout
                         android:id="@+id/ll_diff"
                         android:layout_width="match_parent"
