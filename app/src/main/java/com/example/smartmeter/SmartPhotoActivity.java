@@ -40,6 +40,9 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import com.example.smartmeter.Config;
+
+
 
 public class SmartPhotoActivity extends AppCompatActivity {
 
@@ -84,7 +87,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
                         .readTimeout(5, TimeUnit.SECONDS)
                         .build();
                 Request request = new Request.Builder()
-                        .url(MainActivity.BASE_URL + "/api/smart/rooms")
+                        .url(Config.BASE_URL + "/api/smart/rooms")
                         .get()
                         .build();
                 Response response = client.newCall(request).execute();
@@ -324,7 +327,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
                         new JSONObject().put("records", recordsArray).toString()
                 );
                 Request request = new Request.Builder()
-                        .url(MainActivity.BASE_URL + "/api/smart/batch_sync")
+                        .url(Config.BASE_URL + "/api/smart/batch_sync")
                         .post(body)
                         .build();
                 Response response = client.newCall(request).execute();

@@ -25,6 +25,9 @@ import okhttp3.Response;
 
 public class SmartReviewActivity extends AppCompatActivity {
 
+    // ===== 直接定义 BASE_URL =====
+    private static final String BASE_URL = "http://192.168.10.12:5000";
+
     private RecyclerView reviewRecyclerView;
     private TextView progressText;
     private Button submitBtn;
@@ -32,7 +35,6 @@ public class SmartReviewActivity extends AppCompatActivity {
     private List<ReviewItem> reviewItems = new ArrayList<>();
     private String batchId;
 
-    // ===== 注意：ReviewItem 改为 public static =====
     public static class ReviewItem {
         public int id;
         public String roomName, readDate, readTime, timeLabel, photoPath;
@@ -167,7 +169,7 @@ public class SmartReviewActivity extends AppCompatActivity {
                         bodyJson.toString()
                 );
                 Request request = new Request.Builder()
-                        .url(MainActivity.BASE_URL + "/api/smart/confirm_batch")
+                        .url(BASE_URL + "/api/smart/confirm_batch")
                         .post(body)
                         .build();
                 Response response = client.newCall(request).execute();

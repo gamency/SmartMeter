@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:padding="10dp"
-    android:background="@color/white"
+    android:background="#FFFFFF"
     android:layout_marginBottom="2dp"
     android:elevation="0dp"
     android:gravity="center_vertical">
@@ -16,7 +16,7 @@
         android:text="1"
         android:textSize="12sp"
         android:textStyle="bold"
-        android:textColor="@color/gray_500"
+        android:textColor="#64748B"
         android:gravity="center" />
 
     <TextView
@@ -27,7 +27,7 @@
         android:text="201室"
         android:textSize="15sp"
         android:textStyle="bold"
-        android:textColor="@color/gray_900"
+        android:textColor="#0F172A"
         android:layout_marginStart="8dp" />
 
     <TextView
@@ -36,7 +36,7 @@
         android:layout_height="wrap_content"
         android:text="1层 · 分户"
         android:textSize="11sp"
-        android:textColor="@color/gray_500"
+        android:textColor="#64748B"
         android:layout_marginEnd="12dp" />
 
     <TextView
@@ -46,6 +46,6 @@
         android:text="12.5 度"
         android:textSize="15sp"
         android:textStyle="bold"
-        android:textColor="@color/primary_blue" />
+        android:textColor="#1677FF" />
 
 </LinearLayout>

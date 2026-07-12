@@ -16,6 +16,7 @@ import java.util.List;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import com.example.smartmeter.Config;
 
 public class DistributionActivity extends AppCompatActivity {
 
@@ -43,7 +44,7 @@ public class DistributionActivity extends AppCompatActivity {
                         .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
                         .build();
                 Request request = new Request.Builder()
-                        .url(MainActivity.BASE_URL + "/api/rooms_usage")
+                        .url(Config.BASE_URL + "/api/rooms_usage")
                         .get()
                         .build();
                 Response response = client.newCall(request).execute();

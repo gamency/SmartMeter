@@ -13,13 +13,13 @@
         android:text="201"
         android:textSize="13sp"
         android:textStyle="bold"
-        android:textColor="@color/gray_700" />
+        android:textColor="#334155" />
 
     <View
         android:id="@+id/bar_fill"
         android:layout_width="100dp"
         android:layout_height="16dp"
-        android:background="@color/room_1"
+        android:background="#7C9BF2"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:radius="4dp" />
@@ -30,7 +30,7 @@
         android:layout_height="wrap_content"
         android:text="12.5"
         android:textSize="13sp"
-        android:textColor="@color/gray_700"
+        android:textColor="#334155"
         android:textStyle="bold" />
 
     <TextView
@@ -38,6 +38,6 @@
         android:layout_height="wrap_content"
         android:text=" 度"
         android:textSize="11sp"
-        android:textColor="@color/gray_500" />
+        android:textColor="#64748B" />
 
 </LinearLayout>

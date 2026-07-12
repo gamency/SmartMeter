@@ -1,26 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 主色 -->
+    <!-- ===== 主色 ===== -->
     <color name="primary_blue">#1677FF</color>
     <color name="primary_blue_light">#E8F1FF</color>
 
-    <!-- 警示色 -->
+    <!-- ===== 警示色 ===== -->
     <color name="warning_orange">#FF7D00</color>
     <color name="warning_orange_light">#FFF0E6</color>
 
-    <!-- 文字色 -->
+    <!-- ===== 文字色 ===== -->
     <color name="text_primary">#333333</color>
     <color name="text_secondary">#666666</color>
     <color name="text_hint">#999999</color>
 
-    <!-- 背景色 -->
+    <!-- ===== 背景色 ===== -->
     <color name="bg_page">#F7F8FA</color>
     <color name="bg_card">#FFFFFF</color>
 
-    <!-- 分割线 -->
+    <!-- ===== 分割线 ===== -->
     <color name="divider">#EEEEEE</color>
 
-    <!-- 状态色 -->
+    <!-- ===== 状态色 ===== -->
     <color name="success_green">#22C55E</color>
     <color name="danger_red">#EF4444</color>
+
+    <!-- ===== 灰色系（补齐所有层级） ===== -->
+    <color name="white">#FFFFFF</color>
+    <color name="gray_50">#F8FAFC</color>
+    <color name="gray_100">#F1F5F9</color>
+    <color name="gray_200">#E2E8F0</color>
+    <color name="gray_500">#64748B</color>
+    <color name="gray_700">#334155</color>
+    <color name="gray_900">#0F172A</color>
+
+    <!-- ===== 分户色板（柔和色系） ===== -->
+    <color name="room_1">#7C9BF2</color>
+    <color name="room_2">#6BD4B6</color>
+    <color name="room_3">#F5C46A</color>
+    <color name="room_4">#F29B9B</color>
+    <color name="room_5">#B49CD9</color>
+    <color name="room_6">#6FC9D9</color>
+    <color name="room_7">#F5A97F</color>
+    <color name="room_8">#A3D9A5</color>
+    <color name="room_9">#F2C4D9</color>
+    <color name="room_10">#D9C4A3</color>
 </resources>
