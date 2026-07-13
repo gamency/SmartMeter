@@ -1,17 +1,18 @@
 package com.example.smartmeter;
 
+import android.app.DatePickerDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -32,24 +33,21 @@ public class OverviewFragment extends Fragment {
     private static final String BASE_URL = "http://192.168.10.12:5000";
 
     // UI 组件
+    private TextView updateTime;
     private TextView tvTotalUsage, tvTenantUsage, tvLandlordUsage;
     private TextView tvPowerKwh, tvMeterTotal, tvDiffValue, tvDiffHint;
     private View llDiff;
-    private RecyclerView rvTopTen;
-    private TextView tvEmptyTenant;
     private TextView tvPeriod;
+    private LinearLayout distributionContainer;
+    private TextView tvEmptyTenant;
 
     // 日期标签
     private TextView tagMonth, tagLastMonth, tag30d, tag90d;
-    private View btnCustomDate;
+    private TextView btnCustomDate;
 
     // 日期变量
     private String periodStart = "";
     private String periodEnd = "";
-
-    // 适配器
-    private TopTenAdapter topTenAdapter;
-    private List<TopTenItem> topTenList = new ArrayList<>();
 
     private static final double DIFF_THRESHOLD = 20.0;
 
@@ -60,6 +58,7 @@ public class OverviewFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_overview, container, false);
 
         // 绑定视图
+        updateTime = view.findViewById(R.id.update_time);
         tvTotalUsage = view.findViewById(R.id.tv_total_usage);
         tvTenantUsage = view.findViewById(R.id.tv_tenant_usage);
         tvLandlordUsage = view.findViewById(R.id.tv_landlord_usage);
@@ -68,20 +67,15 @@ public class OverviewFragment extends Fragment {
         tvDiffValue = view.findViewById(R.id.tv_diff_value);
         tvDiffHint = view.findViewById(R.id.tv_diff_hint);
         llDiff = view.findViewById(R.id.ll_diff);
-        rvTopTen = view.findViewById(R.id.rv_top_ten);
-        tvEmptyTenant = view.findViewById(R.id.tv_empty_tenant);
         tvPeriod = view.findViewById(R.id.tv_period);
+        distributionContainer = view.findViewById(R.id.distribution_container);
+        tvEmptyTenant = view.findViewById(R.id.tv_empty_tenant);
 
         tagMonth = view.findViewById(R.id.tag_month);
         tagLastMonth = view.findViewById(R.id.tag_last_month);
         tag30d = view.findViewById(R.id.tag_30d);
         tag90d = view.findViewById(R.id.tag_90d);
         btnCustomDate = view.findViewById(R.id.btn_custom_date);
-
-        // 设置RecyclerView
-        rvTopTen.setLayoutManager(new LinearLayoutManager(getContext()));
-        topTenAdapter = new TopTenAdapter(topTenList);
-        rvTopTen.setAdapter(topTenAdapter);
 
         // 设置默认日期（本月）
         setDefaultPeriod();
@@ -90,14 +84,63 @@ public class OverviewFragment extends Fragment {
         setupFilterTags();
 
         // 自定义日期按钮
-        btnCustomDate.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "自定义日期功能开发中", Toast.LENGTH_SHORT).show();
+        btnCustomDate.setOnClickListener(v -> showDatePickerDialog());
+
+        // ===== 查看完整账单点击 =====
+        TextView tvViewFull = view.findViewById(R.id.tv_view_full);
+        tvViewFull.setOnClickListener(v -> {
+            Intent intent = new Intent(getContext(), DistributionActivity.class);
+            startActivity(intent);
         });
 
+        // 更新时间
+        updateTime.setText("更新于 " + new SimpleDateFormat("HH:mm", Locale.CHINA).format(new java.util.Date()));
+
         // 加载数据
-        loadAllData();
+        refreshAllData();
 
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // 回到前台时自动刷新
+        refreshAllData();
+    }
+
+    // ===== 日期选择对话框 =====
+    private void showDatePickerDialog() {
+        Calendar cal = Calendar.getInstance();
+        int year = cal.get(Calendar.YEAR);
+        int month = cal.get(Calendar.MONTH);
+        int day = cal.get(Calendar.DAY_OF_MONTH);
+
+        DatePickerDialog startDialog = new DatePickerDialog(getContext(),
+                (view, startYear, startMonth, startDay) -> {
+                    String start = startYear + "-" + String.format("%02d", startMonth + 1)
+                            + "-" + String.format("%02d", startDay);
+                    DatePickerDialog endDialog = new DatePickerDialog(getContext(),
+                            (v, endYear, endMonth, endDay) -> {
+                                String end = endYear + "-" + String.format("%02d", endMonth + 1)
+                                        + "-" + String.format("%02d", endDay);
+                                periodStart = start;
+                                periodEnd = end;
+                                tvPeriod.setText(periodStart + " ~ " + periodEnd);
+                                // 取消所有标签的选中状态
+                                TextView[] tags = {tagMonth, tagLastMonth, tag30d, tag90d};
+                                for (TextView tag : tags) {
+                                    tag.setSelected(false);
+                                    tag.setTextColor(getResources().getColor(R.color.text_secondary));
+                                    tag.setBackgroundResource(R.drawable.bg_filter_tag);
+                                }
+                                refreshAllData();
+                            },
+                            year, month, day);
+                    endDialog.show();
+                },
+                year, month, day);
+        startDialog.show();
     }
 
     private void setDefaultPeriod() {
@@ -143,7 +186,7 @@ public class OverviewFragment extends Fragment {
                     break;
             }
             tvPeriod.setText(periodStart + " ~ " + periodEnd);
-            loadAllData();
+            refreshAllData();
         };
 
         tagMonth.setOnClickListener(tagListener);
@@ -164,11 +207,15 @@ public class OverviewFragment extends Fragment {
         selectedTag.setBackgroundResource(R.drawable.bg_filter_tag);
     }
 
-    private void loadAllData() {
+    // ===== 刷新所有数据 =====
+    private void refreshAllData() {
+        // 打印当前周期
+        android.util.Log.d("OverviewFragment", "刷新数据，周期: " + periodStart + " ~ " + periodEnd);
         fetchDashboardData();
-        fetchRoomsUsage();
+        fetchDistribution();
     }
 
+    // ===== API：核心指标 =====
     private void fetchDashboardData() {
         new Thread(() -> {
             try {
@@ -191,36 +238,46 @@ public class OverviewFragment extends Fragment {
                     double powerKwh = json.optDouble("power_kwh", 0);
                     double diff = json.optDouble("diff", 0);
 
-                    getActivity().runOnUiThread(() -> {
-                        tvTotalUsage.setText(String.format("%.1f 度", totalCross));
-                        tvTenantUsage.setText(String.format("%.1f 度", tenantCost));
-                        tvLandlordUsage.setText(String.format("%.1f 度", landlordCost));
-                        tvPowerKwh.setText(String.format("%.1f 度", powerKwh));
-                        tvMeterTotal.setText(String.format("%.1f 度", totalCross));
-                        tvDiffValue.setText(String.format("%.1f 度", diff));
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            tvTotalUsage.setText(String.format("%.1f 度", totalCross));
+                            tvTenantUsage.setText(String.format("%.1f 度", tenantCost));
+                            tvLandlordUsage.setText(String.format("%.1f 度", landlordCost));
+                            tvPowerKwh.setText(String.format("%.1f 度", powerKwh));
+                            tvMeterTotal.setText(String.format("%.1f 度", totalCross));
+                            tvDiffValue.setText(String.format("%.1f 度", diff));
 
-                        if (Math.abs(diff) <= DIFF_THRESHOLD) {
-                            llDiff.setBackgroundResource(R.drawable.bg_diff_normal);
-                            tvDiffValue.setTextColor(getResources().getColor(R.color.text_primary));
-                            tvDiffHint.setText("理想状态下两者数值基本持平");
-                            tvDiffHint.setTextColor(getResources().getColor(R.color.text_hint));
-                        } else {
-                            llDiff.setBackgroundResource(R.drawable.bg_diff_warning);
-                            tvDiffValue.setTextColor(getResources().getColor(R.color.warning_orange));
-                            tvDiffHint.setText("差值异常，建议排查漏电/分表故障/偷电");
-                            tvDiffHint.setTextColor(getResources().getColor(R.color.warning_orange));
-                        }
-                    });
+                            if (Math.abs(diff) <= DIFF_THRESHOLD) {
+                                llDiff.setBackgroundResource(R.drawable.bg_diff_normal);
+                                tvDiffValue.setTextColor(getResources().getColor(R.color.text_primary));
+                                tvDiffHint.setText("理想状态下两者数值基本持平");
+                                tvDiffHint.setTextColor(getResources().getColor(R.color.text_hint));
+                            } else {
+                                llDiff.setBackgroundResource(R.drawable.bg_diff_warning);
+                                tvDiffValue.setTextColor(getResources().getColor(R.color.warning_orange));
+                                tvDiffHint.setText("差值异常，建议排查漏电/分表故障/偷电");
+                                tvDiffHint.setTextColor(getResources().getColor(R.color.warning_orange));
+                            }
+                        });
+                    }
+                } else {
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() ->
+                                Toast.makeText(getContext(), "加载数据失败: HTTP " + response.code(), Toast.LENGTH_SHORT).show());
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                getActivity().runOnUiThread(() ->
-                        Toast.makeText(getContext(), "加载数据失败", Toast.LENGTH_SHORT).show());
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() ->
+                            Toast.makeText(getContext(), "网络异常: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                }
             }
         }).start();
     }
 
-    private void fetchRoomsUsage() {
+    // ===== API：用电分布（柱状图） =====
+    private void fetchDistribution() {
         new Thread(() -> {
             try {
                 OkHttpClient client = new OkHttpClient.Builder()
@@ -235,64 +292,78 @@ public class OverviewFragment extends Fragment {
                 if (response.isSuccessful()) {
                     String jsonData = response.body().string();
                     JSONArray jsonArray = new JSONArray(jsonData);
-
-                    List<TopTenItem> items = new ArrayList<>();
-
-                    double totalKwh = 0;
+                    List<RoomItem> items = new ArrayList<>();
+                    double maxKwh = 0;
                     for (int i = 0; i < jsonArray.length(); i++) {
                         JSONObject obj = jsonArray.getJSONObject(i);
                         double kwh = obj.optDouble("total_kwh", 0);
-                        totalKwh += kwh;
-                    }
-                    double avgKwh = jsonArray.length() > 0 ? totalKwh / jsonArray.length() : 0;
-
-                    for (int i = 0; i < jsonArray.length(); i++) {
-                        JSONObject obj = jsonArray.getJSONObject(i);
-                        double kwh = obj.optDouble("total_kwh", 0);
+                        if (kwh > maxKwh) maxKwh = kwh;
                         String name = obj.getString("name");
                         int floor = obj.getInt("floor");
                         String roomType = obj.getString("room_type");
-
-                        if ("分户出租".equals(roomType) || "商铺".equals(roomType)) {
-                            boolean isWarning = avgKwh > 0 && kwh > avgKwh * 2;
-                            items.add(new TopTenItem(name, floor + "层", kwh, isWarning));
-                        }
+                        // 显示所有房间（分户出租、商铺、公共、房东自住都显示）
+                        items.add(new RoomItem(name, floor + "层", kwh));
                     }
-
-                    items.sort((a, b) -> Double.compare(b.usage, a.usage));
-                    List<TopTenItem> topTen = items.size() > 10 ? items.subList(0, 10) : items;
-
-                    getActivity().runOnUiThread(() -> {
-                        topTenList.clear();
-                        topTenList.addAll(topTen);
-                        topTenAdapter.notifyDataSetChanged();
-
-                        if (topTenList.isEmpty()) {
-                            tvEmptyTenant.setVisibility(View.VISIBLE);
-                            rvTopTen.setVisibility(View.GONE);
-                        } else {
+                    double finalMaxKwh = maxKwh > 0 ? maxKwh : 1;
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            distributionContainer.removeAllViews();
+                            if (items.isEmpty() || finalMaxKwh == 0) {
+                                tvEmptyTenant.setVisibility(View.VISIBLE);
+                                return;
+                            }
                             tvEmptyTenant.setVisibility(View.GONE);
-                            rvTopTen.setVisibility(View.VISIBLE);
-                        }
-                    });
+
+                            // 按用电量降序排列，取前10
+                            items.sort((a, b) -> Double.compare(b.usage, a.usage));
+                            int count = Math.min(items.size(), 10);
+
+                            int[] colors = {
+                                    0xFF4A6CF7, 0xFF22C55E, 0xFFF59E0B, 0xFFEF4444,
+                                    0xFF8B5CF6, 0xFFEC4899, 0xFF14B8A6, 0xFFF97316,
+                                    0xFF6366F1, 0xFF84CC16
+                            };
+
+                            for (int i = 0; i < count; i++) {
+                                RoomItem item = items.get(i);
+                                double ratio = item.usage / finalMaxKwh;
+                                View barView = getLayoutInflater().inflate(R.layout.item_distribution_bar, null);
+                                TextView nameView = barView.findViewById(R.id.bar_name);
+                                View barFill = barView.findViewById(R.id.bar_fill);
+                                TextView valueView = barView.findViewById(R.id.bar_value);
+                                nameView.setText(item.name);
+                                barFill.setBackgroundColor(colors[i % colors.length]);
+                                barFill.getLayoutParams().width = (int) (ratio * 300) + 20;
+                                valueView.setText(String.format("%.1f", item.usage));
+                                distributionContainer.addView(barView);
+                            }
+                        });
+                    }
+                } else {
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() ->
+                                Toast.makeText(getContext(), "加载用电分布失败: HTTP " + response.code(), Toast.LENGTH_SHORT).show());
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() ->
+                            Toast.makeText(getContext(), "加载用电分布异常: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                }
             }
         }).start();
     }
 
-    public static class TopTenItem {
-        public String room;
-        public String floor;
-        public double usage;
-        public boolean isWarning;
-
-        public TopTenItem(String room, String floor, double usage, boolean isWarning) {
-            this.room = room;
+    // ===== 内部数据类 =====
+    private static class RoomItem {
+        String name;
+        String floor;
+        double usage;
+        RoomItem(String name, String floor, double usage) {
+            this.name = name;
             this.floor = floor;
             this.usage = usage;
-            this.isWarning = isWarning;
         }
     }
 }

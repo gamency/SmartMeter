@@ -12,8 +12,8 @@
         android:layout_height="wrap_content"
         android:paddingStart="@dimen/padding_page"
         android:paddingEnd="@dimen/padding_page"
-        android:paddingTop="12dp"
-        android:paddingBottom="8dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="6dp"
         android:background="@color/bg_page">
 
         <TextView
@@ -53,7 +53,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- 1. 房间选择卡片 -->
+            <!-- 1. 房间选择卡片（单行紧凑布局） -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -63,33 +63,28 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="选择抄表房间"
-                        style="@style/TextTitle"
-                        android:layout_marginBottom="@dimen/space_small" />
+                        android:text="选择房间："
+                        style="@style/TextBody"
+                        android:textColor="@color/text_primary" />
 
                     <TextView
                         android:id="@+id/tv_selected_room"
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="请选择房间"
+                        android:layout_weight="1"
+                        android:text="请选择"
                         style="@style/TextBody"
-                        android:padding="12dp"
-                        android:background="@drawable/bg_input"
+                        android:textColor="@color/primary_blue"
+                        android:padding="8dp"
                         android:drawableEnd="@drawable/ic_arrow_down"
-                        android:drawablePadding="8dp" />
-
-                    <TextView
-                        android:id="@+id/tv_room_hint"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="请先选择抄表房间"
-                        style="@style/TextSmall"
-                        android:layout_marginTop="@dimen/space_small" />
+                        android:drawablePadding="4dp"
+                        android:layout_marginStart="8dp" />
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -122,7 +117,6 @@
                         android:text="请先选择抄表房间"
                         style="@style/TextSmall"
                         android:layout_marginTop="@dimen/space_small" />
-
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
