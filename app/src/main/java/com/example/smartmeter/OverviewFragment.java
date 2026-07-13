@@ -3,6 +3,7 @@ package com.example.smartmeter;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +31,7 @@ import okhttp3.Response;
 
 public class OverviewFragment extends Fragment {
 
+    private static final String TAG = "OverviewFragment";
     private static final String BASE_URL = "http://192.168.10.12:5000";
 
     // UI 组件
@@ -40,6 +42,8 @@ public class OverviewFragment extends Fragment {
     private TextView tvPeriod;
     private LinearLayout distributionContainer;
     private TextView tvEmptyTenant;
+    private LinearLayout trendContainer;
+    private TextView tvTrendEmpty;
 
     // 日期标签
     private TextView tagMonth, tagLastMonth, tag30d, tag90d;
@@ -70,6 +74,8 @@ public class OverviewFragment extends Fragment {
         tvPeriod = view.findViewById(R.id.tv_period);
         distributionContainer = view.findViewById(R.id.distribution_container);
         tvEmptyTenant = view.findViewById(R.id.tv_empty_tenant);
+        trendContainer = view.findViewById(R.id.trend_container);
+        tvTrendEmpty = view.findViewById(R.id.tv_trend_empty);
 
         tagMonth = view.findViewById(R.id.tag_month);
         tagLastMonth = view.findViewById(R.id.tag_last_month);
@@ -88,10 +94,12 @@ public class OverviewFragment extends Fragment {
 
         // ===== 查看完整账单点击 =====
         TextView tvViewFull = view.findViewById(R.id.tv_view_full);
-        tvViewFull.setOnClickListener(v -> {
-            Intent intent = new Intent(getContext(), DistributionActivity.class);
-            startActivity(intent);
-        });
+        if (tvViewFull != null) {
+            tvViewFull.setOnClickListener(v -> {
+                Intent intent = new Intent(getContext(), DistributionActivity.class);
+                startActivity(intent);
+            });
+        }
 
         // 更新时间
         updateTime.setText("更新于 " + new SimpleDateFormat("HH:mm", Locale.CHINA).format(new java.util.Date()));
@@ -134,6 +142,7 @@ public class OverviewFragment extends Fragment {
                                     tag.setTextColor(getResources().getColor(R.color.text_secondary));
                                     tag.setBackgroundResource(R.drawable.bg_filter_tag);
                                 }
+                                Log.d(TAG, "自定义日期: " + periodStart + " ~ " + periodEnd);
                                 refreshAllData();
                             },
                             year, month, day);
@@ -186,6 +195,7 @@ public class OverviewFragment extends Fragment {
                     break;
             }
             tvPeriod.setText(periodStart + " ~ " + periodEnd);
+            Log.d(TAG, "快捷标签: " + tagText + ", 周期: " + periodStart + " ~ " + periodEnd);
             refreshAllData();
         };
 
@@ -209,27 +219,37 @@ public class OverviewFragment extends Fragment {
 
     // ===== 刷新所有数据 =====
     private void refreshAllData() {
-        // 打印当前周期
-        android.util.Log.d("OverviewFragment", "刷新数据，周期: " + periodStart + " ~ " + periodEnd);
+        Log.d(TAG, "refreshAllData 调用，周期: " + periodStart + " ~ " + periodEnd);
+        if (periodStart.isEmpty() || periodEnd.isEmpty()) {
+            Log.e(TAG, "周期为空，取消刷新");
+            return;
+        }
         fetchDashboardData();
         fetchDistribution();
+        fetchTrend();
     }
 
     // ===== API：核心指标 =====
     private void fetchDashboardData() {
         new Thread(() -> {
             try {
+                String url = BASE_URL + "/api/dashboard?start=" + periodStart + "&end=" + periodEnd;
+                Log.d(TAG, "请求URL: " + url);
+
                 OkHttpClient client = new OkHttpClient.Builder()
                         .connectTimeout(10, TimeUnit.SECONDS)
                         .readTimeout(10, TimeUnit.SECONDS)
                         .build();
                 Request request = new Request.Builder()
-                        .url(BASE_URL + "/api/dashboard?start=" + periodStart + "&end=" + periodEnd)
+                        .url(url)
                         .get()
                         .build();
                 Response response = client.newCall(request).execute();
+                Log.d(TAG, "响应码: " + response.code());
+
                 if (response.isSuccessful()) {
                     String jsonData = response.body().string();
+                    Log.d(TAG, "响应数据: " + jsonData);
                     JSONObject json = new JSONObject(jsonData);
 
                     double totalCross = json.optDouble("total_cross", 0);
@@ -261,13 +281,14 @@ public class OverviewFragment extends Fragment {
                         });
                     }
                 } else {
+                    Log.e(TAG, "请求失败: " + response.code());
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() ->
                                 Toast.makeText(getContext(), "加载数据失败: HTTP " + response.code(), Toast.LENGTH_SHORT).show());
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e(TAG, "请求异常: ", e);
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() ->
                             Toast.makeText(getContext(), "网络异常: " + e.getMessage(), Toast.LENGTH_SHORT).show());
@@ -280,15 +301,20 @@ public class OverviewFragment extends Fragment {
     private void fetchDistribution() {
         new Thread(() -> {
             try {
+                String url = BASE_URL + "/api/rooms_usage?start=" + periodStart + "&end=" + periodEnd;
+                Log.d(TAG, "请求URL(分布): " + url);
+
                 OkHttpClient client = new OkHttpClient.Builder()
                         .connectTimeout(10, TimeUnit.SECONDS)
                         .readTimeout(10, TimeUnit.SECONDS)
                         .build();
                 Request request = new Request.Builder()
-                        .url(BASE_URL + "/api/rooms_usage?start=" + periodStart + "&end=" + periodEnd)
+                        .url(url)
                         .get()
                         .build();
                 Response response = client.newCall(request).execute();
+                Log.d(TAG, "响应码(分布): " + response.code());
+
                 if (response.isSuccessful()) {
                     String jsonData = response.body().string();
                     JSONArray jsonArray = new JSONArray(jsonData);
@@ -301,7 +327,6 @@ public class OverviewFragment extends Fragment {
                         String name = obj.getString("name");
                         int floor = obj.getInt("floor");
                         String roomType = obj.getString("room_type");
-                        // 显示所有房间（分户出租、商铺、公共、房东自住都显示）
                         items.add(new RoomItem(name, floor + "层", kwh));
                     }
                     double finalMaxKwh = maxKwh > 0 ? maxKwh : 1;
@@ -314,7 +339,6 @@ public class OverviewFragment extends Fragment {
                             }
                             tvEmptyTenant.setVisibility(View.GONE);
 
-                            // 按用电量降序排列，取前10
                             items.sort((a, b) -> Double.compare(b.usage, a.usage));
                             int count = Math.min(items.size(), 10);
 
@@ -340,16 +364,101 @@ public class OverviewFragment extends Fragment {
                         });
                     }
                 } else {
+                    Log.e(TAG, "请求分布失败: " + response.code());
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() ->
-                                Toast.makeText(getContext(), "加载用电分布失败: HTTP " + response.code(), Toast.LENGTH_SHORT).show());
+                                Toast.makeText(getContext(), "加载分布失败: HTTP " + response.code(), Toast.LENGTH_SHORT).show());
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e(TAG, "分布请求异常: ", e);
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() ->
-                            Toast.makeText(getContext(), "加载用电分布异常: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                            Toast.makeText(getContext(), "分布网络异常: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                }
+            }
+        }).start();
+    }
+
+    // ===== API：近30天整栋日总用电趋势 =====
+    private void fetchTrend() {
+        new Thread(() -> {
+            try {
+                String url = BASE_URL + "/api/daily_trend?days=30";
+                Log.d(TAG, "请求URL(趋势): " + url);
+
+                OkHttpClient client = new OkHttpClient.Builder()
+                        .connectTimeout(10, TimeUnit.SECONDS)
+                        .readTimeout(10, TimeUnit.SECONDS)
+                        .build();
+                Request request = new Request.Builder()
+                        .url(url)
+                        .get()
+                        .build();
+                Response response = client.newCall(request).execute();
+                Log.d(TAG, "响应码(趋势): " + response.code());
+
+                if (response.isSuccessful()) {
+                    String jsonData = response.body().string();
+                    JSONArray jsonArray = new JSONArray(jsonData);
+                    List<TrendItem> items = new ArrayList<>();
+                    double maxVal = 0;
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject obj = jsonArray.getJSONObject(i);
+                        double val = obj.optDouble("total", 0);
+                        if (val > maxVal) maxVal = val;
+                        String dateStr = obj.getString("date");
+                        items.add(new TrendItem(dateStr, val));
+                    }
+                    final double finalMaxVal = maxVal > 0 ? maxVal : 1;
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            trendContainer.removeAllViews();
+                            if (items.isEmpty() || finalMaxVal == 0) {
+                                tvTrendEmpty.setVisibility(View.VISIBLE);
+                                return;
+                            }
+                            tvTrendEmpty.setVisibility(View.GONE);
+
+                            int count = Math.min(items.size(), 30);
+                            for (int i = 0; i < count; i++) {
+                                TrendItem item = items.get(i);
+                                double ratio = item.value / finalMaxVal;
+                                View barView = getLayoutInflater().inflate(R.layout.item_trend_bar, null);
+                                TextView dateView = barView.findViewById(R.id.trend_date);
+                                View barFill = barView.findViewById(R.id.trend_fill);
+                                TextView valueView = barView.findViewById(R.id.trend_value);
+
+                                String[] parts = item.date.split("-");
+                                dateView.setText(parts[1] + "-" + parts[2]);
+
+                                int height = (int) (ratio * 100) + 10;
+                                barFill.getLayoutParams().height = height;
+
+                                if (item.value == finalMaxVal) {
+                                    barFill.setBackgroundColor(0xFFF59E0B);
+                                } else {
+                                    barFill.setBackgroundColor(0xFF4A6CF7);
+                                }
+                                valueView.setText(String.format("%.0f", item.value));
+                                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+                                barView.setLayoutParams(params);
+                                trendContainer.addView(barView);
+                            }
+                        });
+                    }
+                } else {
+                    Log.e(TAG, "趋势请求失败: " + response.code());
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() ->
+                                Toast.makeText(getContext(), "加载趋势失败: HTTP " + response.code(), Toast.LENGTH_SHORT).show());
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "趋势请求异常: ", e);
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() ->
+                            Toast.makeText(getContext(), "趋势网络异常: " + e.getMessage(), Toast.LENGTH_SHORT).show());
                 }
             }
         }).start();
@@ -364,6 +473,15 @@ public class OverviewFragment extends Fragment {
             this.name = name;
             this.floor = floor;
             this.usage = usage;
+        }
+    }
+
+    private static class TrendItem {
+        String date;
+        double value;
+        TrendItem(String date, double value) {
+            this.date = date;
+            this.value = value;
         }
     }
 }

@@ -415,6 +415,49 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+            <!-- ===== 近30天日总用电趋势 ===== -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/CardStyle"
+                android:layout_marginBottom="@dimen/space_card_vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="近30天整栋日总用电"
+                        style="@style/TextTitle"
+                        android:layout_marginBottom="@dimen/space_small" />
+
+                    <!-- 趋势柱状图容器 -->
+                    <LinearLayout
+                        android:id="@+id/trend_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="120dp"
+                        android:orientation="horizontal"
+                        android:gravity="bottom"
+                        android:paddingTop="8dp"
+                        android:clipChildren="false" />
+
+                    <TextView
+                        android:id="@+id/tv_trend_empty"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="暂无数据"
+                        style="@style/TextSmall"
+                        android:gravity="center"
+                        android:paddingVertical="16dp"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
         </LinearLayout>
     </ScrollView>
 
