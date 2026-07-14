@@ -2,7 +2,9 @@ package com.example.smartmeter;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -56,6 +58,10 @@ public class MeterInputFragment extends Fragment {
     private static final int REQUEST_PERMISSION = 101;
     private static final String PHOTO_FILE_PROVIDER = "com.example.smartmeter.fileprovider";
 
+    // SharedPreferences 缓存
+    private static final String PREFS_NAME = "smart_meter_prefs";
+    private static final String KEY_ROOM_LIST = "room_list";
+
     private TextView tvSelectedRoom, tvPhotoHint, tvNetworkHint;
     private Button btnTakePhoto, btnSubmitAll;
     private RecyclerView rvCached;
@@ -67,6 +73,9 @@ public class MeterInputFragment extends Fragment {
     private List<CachedRecord> cachedList = new ArrayList<>();
     private CachedRecordAdapter cachedAdapter;
     private String currentPhotoPath;
+
+    // 缓存房间列表（内存）
+    private List<RoomItem> cachedRoomList = new ArrayList<>();
 
     @Nullable
     @Override
@@ -96,7 +105,12 @@ public class MeterInputFragment extends Fragment {
         });
         rvCached.setAdapter(cachedAdapter);
 
+        // 先加载本地缓存
+        loadRoomListFromCache();
+
+        // 然后尝试从网络更新（异步）
         loadRoomList();
+
         loadCachedRecords();
 
         tvSelectedRoom.setOnClickListener(v -> showRoomSelectorDialog());
@@ -112,12 +126,13 @@ public class MeterInputFragment extends Fragment {
         return view;
     }
 
+    // ===== 加载房间列表（优先缓存，网络更新） =====
     private void loadRoomList() {
         new Thread(() -> {
             try {
                 OkHttpClient client = new OkHttpClient.Builder()
-                        .connectTimeout(5, TimeUnit.SECONDS)
-                        .readTimeout(5, TimeUnit.SECONDS)
+                        .connectTimeout(3, TimeUnit.SECONDS)
+                        .readTimeout(3, TimeUnit.SECONDS)
                         .build();
                 Request request = new Request.Builder()
                         .url(BASE_URL + "/api/smart/rooms")
@@ -126,83 +141,97 @@ public class MeterInputFragment extends Fragment {
                 Response response = client.newCall(request).execute();
                 if (response.isSuccessful()) {
                     String jsonData = response.body().string();
-                    JSONArray jsonArray = new JSONArray(jsonData);
-                    List<RoomItem> rooms = new ArrayList<>();
-                    for (int i = 0; i < jsonArray.length(); i++) {
-                        JSONObject obj = jsonArray.getJSONObject(i);
-                        rooms.add(new RoomItem(
-                                obj.getInt("id"),
-                                obj.getString("name"),
-                                obj.getInt("floor"),
-                                obj.getString("room_type")
-                        ));
-                    }
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(() -> {
-                            if (!rooms.isEmpty()) {
-                                selectedRoomId = rooms.get(0).id;
-                                selectedRoomName = rooms.get(0).name;
-                                tvSelectedRoom.setText(selectedRoomName);
-                                btnTakePhoto.setEnabled(true);
-                                tvPhotoHint.setText("点击拍照按钮拍摄电表");
-                            }
-                        });
-                    }
+                    // 更新缓存
+                    saveRoomListToCache(jsonData);
+                    // 解析并更新UI
+                    parseAndSetRooms(jsonData);
                 }
+                // 网络失败不影响，因为已经有缓存了
             } catch (Exception e) {
-                e.printStackTrace();
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(() ->
-                            Toast.makeText(getContext(), "加载房间列表失败", Toast.LENGTH_SHORT).show());
-                }
+                Log.w(TAG, "网络获取房间列表失败，使用缓存");
             }
         }).start();
     }
 
+    private void saveRoomListToCache(String jsonData) {
+        if (getActivity() == null) return;
+        SharedPreferences prefs = getActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putString(KEY_ROOM_LIST, jsonData).apply();
+    }
+
+    private void loadRoomListFromCache() {
+        if (getActivity() == null) return;
+        SharedPreferences prefs = getActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String jsonData = prefs.getString(KEY_ROOM_LIST, null);
+        if (jsonData != null) {
+            parseAndSetRooms(jsonData);
+        } else {
+            // 无缓存，显示等待
+            getActivity().runOnUiThread(() -> {
+                tvSelectedRoom.setText("请联网加载房间");
+                btnTakePhoto.setEnabled(false);
+            });
+        }
+    }
+
+    private void parseAndSetRooms(String jsonData) {
+        try {
+            JSONArray jsonArray = new JSONArray(jsonData);
+            List<RoomItem> rooms = new ArrayList<>();
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject obj = jsonArray.getJSONObject(i);
+                rooms.add(new RoomItem(
+                        obj.getInt("id"),
+                        obj.getString("name"),
+                        obj.getInt("floor"),
+                        obj.getString("room_type")
+                ));
+            }
+            if (getActivity() == null) return;
+            getActivity().runOnUiThread(() -> {
+                cachedRoomList = rooms;
+                if (!rooms.isEmpty()) {
+                    selectedRoomId = rooms.get(0).id;
+                    selectedRoomName = rooms.get(0).name;
+                    tvSelectedRoom.setText(selectedRoomName);
+                    btnTakePhoto.setEnabled(true);
+                    tvPhotoHint.setText("点击拍照按钮拍摄电表");
+                } else {
+                    tvSelectedRoom.setText("暂无房间");
+                    btnTakePhoto.setEnabled(false);
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ===== 房间选择对话框（使用缓存列表） =====
     private void showRoomSelectorDialog() {
-        new Thread(() -> {
-            try {
-                OkHttpClient client = new OkHttpClient.Builder()
-                        .connectTimeout(5, TimeUnit.SECONDS)
-                        .readTimeout(5, TimeUnit.SECONDS)
-                        .build();
-                Request request = new Request.Builder()
-                        .url(BASE_URL + "/api/smart/rooms")
-                        .get()
-                        .build();
-                Response response = client.newCall(request).execute();
-                if (response.isSuccessful()) {
-                    String jsonData = response.body().string();
-                    JSONArray jsonArray = new JSONArray(jsonData);
-                    String[] roomNames = new String[jsonArray.length()];
-                    int[] roomIds = new int[jsonArray.length()];
-                    for (int i = 0; i < jsonArray.length(); i++) {
-                        JSONObject obj = jsonArray.getJSONObject(i);
-                        roomNames[i] = obj.getString("name");
-                        roomIds[i] = obj.getInt("id");
-                    }
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(() -> {
-                            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-                            builder.setTitle("选择房间");
-                            builder.setItems(roomNames, (dialog, which) -> {
-                                selectedRoomId = roomIds[which];
-                                selectedRoomName = roomNames[which];
-                                tvSelectedRoom.setText(selectedRoomName);
-                                btnTakePhoto.setEnabled(true);
-                                tvPhotoHint.setText("点击拍照按钮拍摄电表");
-                            });
-                            builder.setNegativeButton("取消", null);
-                            builder.show();
-                        });
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }).start();
+        if (cachedRoomList.isEmpty()) {
+            Toast.makeText(getContext(), "无房间列表，请连接网络加载", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] roomNames = new String[cachedRoomList.size()];
+        int[] roomIds = new int[cachedRoomList.size()];
+        for (int i = 0; i < cachedRoomList.size(); i++) {
+            roomNames[i] = cachedRoomList.get(i).name;
+            roomIds[i] = cachedRoomList.get(i).id;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("选择房间");
+        builder.setItems(roomNames, (dialog, which) -> {
+            selectedRoomId = roomIds[which];
+            selectedRoomName = roomNames[which];
+            tvSelectedRoom.setText(selectedRoomName);
+            btnTakePhoto.setEnabled(true);
+            tvPhotoHint.setText("点击拍照按钮拍摄电表");
+        });
+        builder.setNegativeButton("取消", null);
+        builder.show();
     }
 
+    // ===== 拍照权限检查 =====
     private void checkPermissionAndTakePhoto() {
         if (selectedRoomId == -1) {
             Toast.makeText(getContext(), "请先选择房间", Toast.LENGTH_SHORT).show();
@@ -359,6 +388,7 @@ public class MeterInputFragment extends Fragment {
         }
     }
 
+    // ===== 核心：提交到后端 =====
     private void submitAllCached() {
         if (cachedList.isEmpty()) {
             Toast.makeText(getContext(), "没有待提交数据", Toast.LENGTH_SHORT).show();
@@ -368,6 +398,7 @@ public class MeterInputFragment extends Fragment {
         final List<CachedRecord> toSubmit = new ArrayList<>(cachedList);
         final int totalCount = toSubmit.size();
 
+        // 检查是否有图片数据
         for (CachedRecord rec : toSubmit) {
             if (rec.photoBase64 == null || rec.photoBase64.isEmpty()) {
                 Toast.makeText(getContext(), "记录 " + rec.roomName + " 缺少图片，请重新拍照", Toast.LENGTH_SHORT).show();
@@ -375,6 +406,7 @@ public class MeterInputFragment extends Fragment {
             }
         }
 
+        // 构建请求体
         JSONArray recordsArray = new JSONArray();
         for (CachedRecord record : toSubmit) {
             try {
@@ -449,6 +481,7 @@ public class MeterInputFragment extends Fragment {
                                         "✅ " + msg + "\n批次: " + batchId.substring(0, 8) + "...",
                                         Toast.LENGTH_LONG).show();
 
+                                // 清空缓存
                                 cachedList.clear();
                                 cachedAdapter.notifyDataSetChanged();
                                 tvEmptyCached.setVisibility(View.VISIBLE);
