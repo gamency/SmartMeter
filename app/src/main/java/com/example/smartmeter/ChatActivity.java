@@ -1,6 +1,7 @@
 package com.example.smartmeter;
 
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -16,6 +17,9 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -45,22 +49,26 @@ public class ChatActivity extends AppCompatActivity {
     private static final String TAG = "ChatActivity";
     private static final String PREF_CURRENT_SESSION = "current_session_id";
 
-    private RecyclerView rvMessages;
+    private DrawerLayout drawerLayout;
+    private RecyclerView rvMessages, rvSessions;
     private EditText etMessage;
     private Button btnSend;
     private TextView tvSessionTitle;
-    private TextView tvTimer;              // 计时器显示
-    private ImageView btnBack, btnNewSession, ivDropdown, btnStop;
+    private TextView tvTimer;
+    private TextView tvSessionsCount;
+    private ImageView btnMenu;
+    private Button btnNewSessionSidebar;
 
-    private ChatMessageAdapter adapter;
+    private ChatMessageAdapter messageAdapter;
+    private ChatSessionAdapter sessionAdapter;
     private List<ChatMessage> messageList = new ArrayList<>();
-
-    private OkHttpClient client;
-    private Call currentCall;              // 当前请求，用于取消
-    private int currentSessionId = -1;
     private List<ChatSession> sessions = new ArrayList<>();
 
-    // 计时器相关
+    private OkHttpClient client;
+    private Call currentCall;
+    private int currentSessionId = -1;
+
+    // 计时器
     private Timer timer;
     private int elapsedSeconds = 0;
     private boolean isWaitingResponse = false;
@@ -72,49 +80,61 @@ public class ChatActivity extends AppCompatActivity {
         setContentView(R.layout.activity_chat);
 
         // 初始化视图
-        Toolbar toolbar = findViewById(R.id.toolbar_chat);
-        tvSessionTitle = findViewById(R.id.tv_session_title);
-        btnBack = findViewById(R.id.btn_back);
-        btnNewSession = findViewById(R.id.btn_new_session);
-        ivDropdown = findViewById(R.id.iv_dropdown);
-        tvTimer = findViewById(R.id.tv_timer);
-        btnStop = findViewById(R.id.btn_stop);
+        drawerLayout = findViewById(R.id.drawer_layout);
         rvMessages = findViewById(R.id.rv_messages);
+        rvSessions = findViewById(R.id.rv_sessions);
         etMessage = findViewById(R.id.et_message);
         btnSend = findViewById(R.id.btn_send);
+        tvSessionTitle = findViewById(R.id.tv_session_title);
+        tvTimer = findViewById(R.id.tv_timer);
+        tvSessionsCount = findViewById(R.id.tv_sessions_count);
+        btnMenu = findViewById(R.id.btn_menu);
+        btnNewSessionSidebar = findViewById(R.id.btn_new_session_sidebar);
 
-        // 设置 RecyclerView
-        adapter = new ChatMessageAdapter(messageList);
+        // 设置消息列表
+        messageAdapter = new ChatMessageAdapter(messageList);
         rvMessages.setLayoutManager(new LinearLayoutManager(this));
-        rvMessages.setAdapter(adapter);
+        rvMessages.setAdapter(messageAdapter);
 
-        // 思考过程监听
-        adapter.setThinkingToggleListener((position, isExpanded) -> {
-            Log.d(TAG, "Thinking toggled: position=" + position + ", expanded=" + isExpanded);
+        // 设置会话列表
+        sessionAdapter = new ChatSessionAdapter(sessions, currentSessionId, session -> {
+            if (currentCall != null && !currentCall.isCanceled()) {
+                currentCall.cancel();
+            }
+            stopTimer();
+            selectSession(session.getId());
+            drawerLayout.closeDrawer(GravityCompat.START);
         });
+        rvSessions.setLayoutManager(new LinearLayoutManager(this));
+        rvSessions.setAdapter(sessionAdapter);
 
-        // 初始化 OkHttp（超时设为一个非常大的值，实际永不超时）
+        // 初始化 OkHttp（无超时）
         client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(0, TimeUnit.SECONDS)    // 5分钟，实际够用
+                .readTimeout(0, TimeUnit.MILLISECONDS)
                 .writeTimeout(60, TimeUnit.SECONDS)
                 .build();
 
         // 事件绑定
-        btnBack.setOnClickListener(v -> finish());
-        btnNewSession.setOnClickListener(v -> createNewSession());
-        ivDropdown.setOnClickListener(v -> showSessionPicker());
-        tvSessionTitle.setOnClickListener(v -> showSessionPicker());
-        btnSend.setOnClickListener(v -> sendMessage());
-        btnStop.setOnClickListener(v -> stopRequest());
+        btnMenu.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
+        btnNewSessionSidebar.setOnClickListener(v -> {
+            createNewSession();
+            drawerLayout.closeDrawer(GravityCompat.START);
+        });
+        tvSessionTitle.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
+        btnSend.setOnClickListener(v -> {
+            if (isWaitingResponse) {
+                stopRequest();
+            } else {
+                sendMessage();
+            }
+        });
 
         // 加载会话
         loadSessions();
     }
 
-    // ================================================================
-    // 计时器控制
-    // ================================================================
+    // ===== 计时器控制 =====
     private void startTimer() {
         if (timer != null) {
             timer.cancel();
@@ -123,8 +143,7 @@ public class ChatActivity extends AppCompatActivity {
         elapsedSeconds = 0;
         isWaitingResponse = true;
         tvTimer.setVisibility(View.VISIBLE);
-        btnStop.setVisibility(View.VISIBLE);
-        btnStop.setEnabled(true);
+        updateSendButton(true);
         updateTimerDisplay();
 
         timer = new Timer();
@@ -144,8 +163,7 @@ public class ChatActivity extends AppCompatActivity {
         }
         isWaitingResponse = false;
         tvTimer.setVisibility(View.GONE);
-        btnStop.setVisibility(View.GONE);
-        btnStop.setEnabled(false);
+        updateSendButton(false);
     }
 
     private void updateTimerDisplay() {
@@ -158,40 +176,43 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-    // ================================================================
-    // 停止请求
-    // ================================================================
+    // ===== 发送按钮状态切换 =====
+    private void updateSendButton(boolean isSending) {
+        if (isSending) {
+            btnSend.setText("停止");
+            btnSend.setBackgroundTintList(ContextCompat.getColorStateList(this, android.R.color.holo_red_dark));
+            btnSend.setEnabled(true);
+        } else {
+            btnSend.setText("发送");
+            btnSend.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.primary_blue));
+            btnSend.setEnabled(true);
+        }
+    }
+
+    // ===== 停止请求 =====
     private void stopRequest() {
         if (currentCall != null && !currentCall.isCanceled()) {
             currentCall.cancel();
             currentCall = null;
         }
         stopTimer();
-        // 移除打字指示器
-        adapter.setTyping(false);
-        // 添加一条中断消息
+        messageAdapter.setTyping(false);
+        enableInput(true);
         ChatMessage stopMsg = new ChatMessage(0, "assistant", "⏹️ 已停止生成", "", null);
         messageList.add(stopMsg);
-        adapter.notifyItemInserted(messageList.size() - 1);
+        messageAdapter.notifyItemInserted(messageList.size() - 1);
         rvMessages.scrollToPosition(messageList.size() - 1);
         Toast.makeText(this, "已停止", Toast.LENGTH_SHORT).show();
-        enableInput(true);
     }
 
-    // ================================================================
-    // 输入控制
-    // ================================================================
     private void enableInput(boolean enable) {
-        btnSend.setEnabled(enable);
         etMessage.setEnabled(enable);
         if (enable) {
             etMessage.requestFocus();
         }
     }
 
-    // ================================================================
-    // 会话管理
-    // ================================================================
+    // ===== 会话管理 =====
     private void loadSessions() {
         Request request = new Request.Builder()
                 .url(Config.BASE_URL + "/chat/api/sessions")
@@ -238,6 +259,7 @@ public class ChatActivity extends AppCompatActivity {
                         }
                         final int finalTargetId = targetId;
                         runOnUiThread(() -> {
+                            updateSessionList();
                             if (finalTargetId != -1) {
                                 selectSession(finalTargetId);
                             } else {
@@ -279,7 +301,10 @@ public class ChatActivity extends AppCompatActivity {
                                 0
                         );
                         sessions.add(0, newSession);
-                        runOnUiThread(() -> selectSession(id));
+                        runOnUiThread(() -> {
+                            updateSessionList();
+                            selectSession(id);
+                        });
                     } catch (Exception e) {
                         Log.e(TAG, "解析新会话失败", e);
                     }
@@ -299,38 +324,16 @@ public class ChatActivity extends AppCompatActivity {
                 break;
             }
         }
+        sessionAdapter.setCurrentSessionId(sessionId);
         loadMessages(sessionId);
     }
 
-    private void showSessionPicker() {
-        if (sessions.isEmpty()) {
-            Toast.makeText(this, "暂无会话", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String[] titles = new String[sessions.size()];
-        for (int i = 0; i < sessions.size(); i++) {
-            titles[i] = sessions.get(i).getTitle();
-        }
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("切换对话");
-        builder.setItems(titles, (dialog, which) -> {
-            int id = sessions.get(which).getId();
-            if (id != currentSessionId) {
-                // 如果有请求正在进行，先取消
-                if (currentCall != null && !currentCall.isCanceled()) {
-                    currentCall.cancel();
-                }
-                stopTimer();
-                selectSession(id);
-            }
-        });
-        builder.setNegativeButton("取消", null);
-        builder.show();
+    private void updateSessionList() {
+        sessionAdapter.updateData(sessions, currentSessionId);
+        tvSessionsCount.setText(sessions.size() + " 个对话");
     }
 
-    // ================================================================
-    // 消息加载
-    // ================================================================
+    // ===== 消息加载 =====
     private void loadMessages(int sessionId) {
         Request request = new Request.Builder()
                 .url(Config.BASE_URL + "/chat/api/sessions/" + sessionId + "/messages")
@@ -381,7 +384,7 @@ public class ChatActivity extends AppCompatActivity {
                         runOnUiThread(() -> {
                             messageList.clear();
                             messageList.addAll(newMessages);
-                            adapter.notifyDataSetChanged();
+                            messageAdapter.notifyDataSetChanged();
                             rvMessages.scrollToPosition(messageList.size() - 1);
                         });
                     } catch (Exception e) {
@@ -392,9 +395,7 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-    // ================================================================
-    // 发送消息
-    // ================================================================
+    // ===== 发送消息 =====
     private void sendMessage() {
         String text = etMessage.getText().toString().trim();
         if (TextUtils.isEmpty(text) || currentSessionId == -1) return;
@@ -406,19 +407,14 @@ public class ChatActivity extends AppCompatActivity {
         etMessage.setText("");
         enableInput(false);
 
-        // 添加用户消息
         ChatMessage userMsg = new ChatMessage(0, "user", text, "", null);
         messageList.add(userMsg);
-        adapter.notifyItemInserted(messageList.size() - 1);
+        messageAdapter.notifyItemInserted(messageList.size() - 1);
         rvMessages.scrollToPosition(messageList.size() - 1);
 
-        // 显示打字指示器
-        adapter.setTyping(true);
-
-        // 启动计时器
+        messageAdapter.setTyping(true);
         startTimer();
 
-        // 构建请求
         JSONObject body = new JSONObject();
         try {
             body.put("message", text);
@@ -434,20 +430,13 @@ public class ChatActivity extends AppCompatActivity {
         currentCall.enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
+                if (call.isCanceled()) return;
                 runOnUiThread(() -> {
-                    // 如果是因为手动取消，不显示错误
-                    if (call.isCanceled()) {
-                        return;
-                    }
-                    adapter.setTyping(false);
+                    messageAdapter.setTyping(false);
                     stopTimer();
                     enableInput(true);
-                    String errorMsg;
-                    if (e instanceof java.net.SocketTimeoutException) {
-                        errorMsg = "⏳ 服务器响应超时";
-                    } else {
-                        errorMsg = "❌ 网络异常: " + e.getMessage();
-                    }
+                    String errorMsg = (e instanceof java.net.SocketTimeoutException) ?
+                            "⏳ 服务器响应超时" : "❌ 网络异常: " + e.getMessage();
                     Toast.makeText(ChatActivity.this, errorMsg, Toast.LENGTH_SHORT).show();
                     addErrorMessage(errorMsg);
                 });
@@ -457,7 +446,7 @@ public class ChatActivity extends AppCompatActivity {
             public void onResponse(Call call, Response response) throws IOException {
                 runOnUiThread(() -> {
                     stopTimer();
-                    adapter.setTyping(false);
+                    messageAdapter.setTyping(false);
                     enableInput(true);
                 });
 
@@ -492,40 +481,28 @@ public class ChatActivity extends AppCompatActivity {
                         );
                         runOnUiThread(() -> {
                             messageList.add(assistantMsg);
-                            adapter.notifyItemInserted(messageList.size() - 1);
+                            messageAdapter.notifyItemInserted(messageList.size() - 1);
                             rvMessages.scrollToPosition(messageList.size() - 1);
-                            refreshSessionTitle();
+                            // 刷新会话列表（更新标题）
+                            loadSessions();
                         });
                     } catch (Exception e) {
                         Log.e(TAG, "解析回复失败", e);
-                        runOnUiThread(() -> {
-                            addErrorMessage("❌ 解析响应失败: " + e.getMessage());
-                        });
+                        runOnUiThread(() -> addErrorMessage("❌ 解析响应失败: " + e.getMessage()));
                     }
                 } else {
-                    runOnUiThread(() -> {
-                        addErrorMessage("❌ 服务器错误: " + response.code());
-                    });
+                    runOnUiThread(() -> addErrorMessage("❌ 服务器错误: " + response.code()));
                 }
-                runOnUiThread(() -> {
-                    currentCall = null;
-                });
+                runOnUiThread(() -> currentCall = null);
             }
         });
     }
 
-    // ================================================================
-    // 辅助方法
-    // ================================================================
     private void addErrorMessage(String message) {
         ChatMessage errorMsg = new ChatMessage(0, "assistant", message, "", null);
         messageList.add(errorMsg);
-        adapter.notifyItemInserted(messageList.size() - 1);
+        messageAdapter.notifyItemInserted(messageList.size() - 1);
         rvMessages.scrollToPosition(messageList.size() - 1);
-    }
-
-    private void refreshSessionTitle() {
-        loadSessions();
     }
 
     @Override
@@ -538,6 +515,15 @@ public class ChatActivity extends AppCompatActivity {
         if (currentCall != null && !currentCall.isCanceled()) {
             currentCall.cancel();
             currentCall = null;
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
         }
     }
 }

@@ -1,142 +1,171 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/bg_page">
+    android:fitsSystemWindows="true">
 
-    <!-- ===== 顶部工具栏 ===== -->
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar_chat"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/primary_blue"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
-
-        <!-- 返回按钮 -->
-        <ImageView
-            android:id="@+id/btn_back"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:padding="12dp"
-            android:src="@drawable/ic_back_white"
-            android:background="?attr/selectableItemBackground"
-            android:contentDescription="返回" />
-
-        <!-- 标题 -->
-        <TextView
-            android:id="@+id/tv_session_title"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="新对话"
-            android:textSize="18sp"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold"
-            android:padding="8dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground" />
-
-        <!-- ===== 新增：计时器显示 ===== -->
-        <TextView
-            android:id="@+id/tv_timer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textSize="14sp"
-            android:textColor="#FFD700"
-            android:fontFamily="monospace"
-            android:padding="4dp"
-            android:visibility="gone" />
-
-        <!-- ===== 新增：停止按钮 ===== -->
-        <ImageView
-            android:id="@+id/btn_stop"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:padding="12dp"
-            android:src="@drawable/ic_stop_red"
-            android:background="?attr/selectableItemBackground"
-            android:contentDescription="停止生成"
-            android:visibility="gone" />
-
-        <!-- 会话切换下拉箭头 -->
-        <ImageView
-            android:id="@+id/iv_dropdown"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_dropdown_white"
-            android:layout_marginEnd="8dp"
-            android:background="?attr/selectableItemBackground"
-            android:contentDescription="切换对话" />
-
-        <!-- 新建会话按钮 -->
-        <ImageView
-            android:id="@+id/btn_new_session"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:padding="12dp"
-            android:src="@drawable/ic_add_white"
-            android:background="?attr/selectableItemBackground"
-            android:contentDescription="新建对话" />
-
-    </androidx.appcompat.widget.Toolbar>
-
-    <!-- 分割线 -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/divider" />
-
-    <!-- ===== 消息列表 ===== -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_messages"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:clipToPadding="false"
-        android:background="#FFFFFF" />
-
-    <!-- ===== 底部输入区 ===== -->
+    <!-- 主内容区域 -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:background="#FFFFFF"
-        android:elevation="8dp"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/bg_page">
 
-        <EditText
-            android:id="@+id/et_message"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
+        <!-- 顶部标题栏 -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar_chat"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/primary_blue"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+
+            <!-- 菜单按钮（汉堡图标） -->
+            <ImageView
+                android:id="@+id/btn_menu"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:padding="12dp"
+                android:src="@drawable/ic_menu_white"
+                android:background="?attr/selectableItemBackground"
+                android:contentDescription="打开侧边栏" />
+
+            <!-- 当前会话标题 -->
+            <TextView
+                android:id="@+id/tv_session_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="新对话"
+                android:textSize="18sp"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:padding="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground" />
+
+            <!-- 计时器 -->
+            <TextView
+                android:id="@+id/tv_timer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="14sp"
+                android:textColor="#FFD700"
+                android:fontFamily="monospace"
+                android:padding="4dp"
+                android:visibility="gone" />
+
+        </androidx.appcompat.widget.Toolbar>
+
+        <!-- 消息列表 -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_messages"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
             android:layout_weight="1"
-            android:hint="输入问题..."
-            android:inputType="textMultiLine"
-            android:maxLines="4"
-            android:padding="12dp"
-            android:background="@drawable/bg_input"
-            android:minHeight="44dp"
-            android:textSize="15sp" />
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:clipToPadding="false"
+            android:background="#FFFFFF" />
 
-        <Button
-            android:id="@+id/btn_send"
-            android:layout_width="56dp"
-            android:layout_height="44dp"
-            android:text="发送"
-            android:textSize="13sp"
-            android:backgroundTint="@color/primary_blue"
-            android:layout_marginStart="8dp"
-            android:textColor="#FFFFFF" />
+        <!-- 底部输入区 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="8dp"
+            android:background="#FFFFFF"
+            android:elevation="8dp">
+
+            <EditText
+                android:id="@+id/et_message"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="输入问题..."
+                android:inputType="textMultiLine"
+                android:maxLines="4"
+                android:padding="12dp"
+                android:background="@drawable/bg_input"
+                android:minHeight="44dp"
+                android:textSize="15sp" />
+
+            <Button
+                android:id="@+id/btn_send"
+                android:layout_width="56dp"
+                android:layout_height="44dp"
+                android:text="发送"
+                android:textSize="13sp"
+                android:backgroundTint="@color/primary_blue"
+                android:layout_marginStart="8dp"
+                android:textColor="#FFFFFF" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
-</LinearLayout>
+    <!-- 侧边栏 -->
+    <LinearLayout
+        android:id="@+id/sidebar"
+        android:layout_width="280dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:orientation="vertical"
+        android:background="#FFFFFF"
+        android:elevation="8dp">
+
+        <!-- 侧边栏头部 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:background="@color/primary_blue">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📋 对话历史"
+                android:textSize="18sp"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_sessions_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 个对话"
+                android:textSize="12sp"
+                android:textColor="#B0BEC5"
+                android:layout_marginTop="4dp" />
+
+        </LinearLayout>
+
+        <!-- 会话列表 -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_sessions"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="8dp" />
+
+        <!-- 新建对话按钮 -->
+        <Button
+            android:id="@+id/btn_new_session_sidebar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="➕ 新建对话"
+            android:backgroundTint="@color/primary_blue"
+            android:textColor="#FFFFFF"
+            android:padding="12dp"
+            android:layout_margin="8dp" />
+
+    </LinearLayout>
+
+</androidx.drawerlayout.widget.DrawerLayout>
