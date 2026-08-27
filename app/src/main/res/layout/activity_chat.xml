@@ -39,6 +39,29 @@
             android:focusable="true"
             android:background="?attr/selectableItemBackground" />
 
+        <!-- ===== 新增：计时器显示 ===== -->
+        <TextView
+            android:id="@+id/tv_timer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="14sp"
+            android:textColor="#FFD700"
+            android:fontFamily="monospace"
+            android:padding="4dp"
+            android:visibility="gone" />
+
+        <!-- ===== 新增：停止按钮 ===== -->
+        <ImageView
+            android:id="@+id/btn_stop"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="12dp"
+            android:src="@drawable/ic_stop_red"
+            android:background="?attr/selectableItemBackground"
+            android:contentDescription="停止生成"
+            android:visibility="gone" />
+
         <!-- 会话切换下拉箭头 -->
         <ImageView
             android:id="@+id/iv_dropdown"
