@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -16,7 +17,52 @@
         android:textColor="#1A1A2E"
         android:layout_marginBottom="12dp" />
 
-    <!-- 房间选择 -->
+    <!-- ===== 状态显示 ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="#E3F2FD"
+        android:radius="8dp"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📌 当前："
+            android:textSize="14sp"
+            android:textColor="#1565C0" />
+
+        <TextView
+            android:id="@+id/tv_current_room"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="请选择"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#0D47A1" />
+
+        <TextView
+            android:id="@+id/tv_current_type"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="电表"
+            android:textSize="14sp"
+            android:textColor="#1565C0"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:id="@+id/tv_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0/0"
+            android:textSize="12sp"
+            android:textColor="#1565C0" />
+    </LinearLayout>
+
+    <!-- ===== 房间选择 ===== -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -25,7 +71,7 @@
         android:background="#FFFFFF"
         android:padding="12dp"
         android:elevation="2dp"
-        android:layout_marginBottom="12dp">
+        android:layout_marginBottom="8dp">
 
         <TextView
             android:layout_width="wrap_content"
@@ -50,31 +96,150 @@
             android:textColor="#9CA3AF" />
     </LinearLayout>
 
-    <!-- ===== 新增：表类型选择 ===== -->
+    <!-- ===== 抄表模式切换 ===== -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:background="#FFFFFF"
-        android:padding="12dp"
+        android:padding="8dp"
         android:elevation="2dp"
-        android:layout_marginBottom="12dp">
+        android:layout_marginBottom="8dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="表类型："
+            android:text="抄表模式："
             android:textSize="14sp"
-            android:textColor="#1A1A2E" />
+            android:textColor="#1A1A2E"
+            android:layout_marginEnd="8dp" />
 
-        <Spinner
-            android:id="@+id/resourceTypeSpinner"
-            android:layout_width="0dp"
+        <Button
+            android:id="@+id/btn_mode_room"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="按房间"
+            android:backgroundTint="#E2E8F0"
+            android:textColor="#64748B"
+            android:paddingHorizontal="16dp"
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/btn_mode_type"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="按表型"
+            android:backgroundTint="#4A6CF7"
+            android:textColor="#FFFFFF"
+            android:paddingHorizontal="16dp" />
+    </LinearLayout>
+
+    <!-- ===== 表型自动切换开关（新增） ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="#FFFFFF"
+        android:padding="8dp"
+        android:elevation="2dp"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="表型自动切换："
+            android:textSize="14sp"
+            android:textColor="#1A1A2E"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/btn_auto_type"
+            android:layout_width="60dp"
+            android:layout_height="32dp"
+            android:text="关"
+            android:backgroundTint="#EF4444"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <!-- ===== 表型按钮 ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="8dp"
+        android:background="#FFFFFF"
+        android:elevation="2dp"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="表型："
+            android:textSize="14sp"
+            android:textColor="#1A1A2E"
+            android:layout_marginEnd="12dp" />
+
+        <Button
+            android:id="@+id/btn_electric"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:entries="@array/resource_types" />
+            android:text="⚡电表"
+            android:backgroundTint="#4A6CF7"
+            android:textColor="#FFFFFF"
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/btn_cold_water"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="💧冷水"
+            android:backgroundTint="#E2E8F0"
+            android:textColor="#64748B"
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/btn_hot_water"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="🔥热水"
+            android:backgroundTint="#E2E8F0"
+            android:textColor="#64748B" />
+    </LinearLayout>
+
+    <!-- ===== 连续拍照开关 ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="#FFFFFF"
+        android:padding="8dp"
+        android:elevation="2dp"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔄 连续拍照"
+            android:textSize="14sp"
+            android:textColor="#1A1A2E"
+            android:layout_marginEnd="12dp" />
+
+        <Button
+            android:id="@+id/btn_continuous"
+            android:layout_width="60dp"
+            android:layout_height="32dp"
+            android:text="开"
+            android:backgroundTint="#22C55E"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
     </LinearLayout>
 
     <!-- 拍照按钮 -->
