@@ -15,7 +15,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -41,7 +40,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import androidx.appcompat.widget.Toolbar;
 
 public class ChatActivity extends AppCompatActivity {
 
@@ -80,9 +78,13 @@ public class ChatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().hide();
+        // 状态栏颜色
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(getColor(R.color.primary_blue));
+            getWindow().getDecorView().setSystemUiVisibility(
+                    getWindow().getDecorView().getSystemUiVisibility() & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
         }
+
         // 初始化视图
         drawerLayout = findViewById(R.id.drawer_layout);
         sidebar = findViewById(R.id.sidebar);
@@ -96,14 +98,10 @@ public class ChatActivity extends AppCompatActivity {
         btnMenu = findViewById(R.id.btn_menu);
         btnNewSessionSidebar = findViewById(R.id.btn_new_session_sidebar);
 
-        // 设置 Toolbar（去除标题）
-//        Toolbar toolbar = findViewById(R.id.toolbar_chat);
-//        setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayShowTitleEnabled(false);
-        }
+        // ===== 删除所有 Toolbar 相关代码 =====
+        // 不再需要 setSupportActionBar
 
-        // 侧边栏推入效果（只平移，不缩放，更稳定）
+        // 侧边栏推入效果
         drawerLayout.setScrimColor(Color.TRANSPARENT);
         drawerLayout.addDrawerListener(new DrawerLayout.SimpleDrawerListener() {
             @Override
@@ -385,6 +383,8 @@ public class ChatActivity extends AppCompatActivity {
                             String role = obj.getString("role");
                             String content = obj.getString("content");
                             String createdAt = obj.getString("created_at");
+
+                            // ===== 正确解析 steps =====
                             List<Map<String, Object>> steps = null;
                             if (obj.has("steps") && !obj.isNull("steps")) {
                                 JSONArray stepsArray = obj.getJSONArray("steps");
@@ -484,6 +484,8 @@ public class ChatActivity extends AppCompatActivity {
                         String role = obj.getString("role");
                         String content = obj.getString("content");
                         String createdAt = obj.getString("created_at");
+
+                        // ===== 正确解析 steps =====
                         List<Map<String, Object>> steps = null;
                         if (obj.has("steps") && !obj.isNull("steps")) {
                             JSONArray stepsArray = obj.getJSONArray("steps");

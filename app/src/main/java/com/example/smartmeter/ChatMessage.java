@@ -5,10 +5,10 @@ import java.util.Map;
 
 public class ChatMessage {
     private int id;
-    private String role;      // "user" 或 "assistant"
+    private String role;
     private String content;
     private String createdAt;
-    private List<Map<String, Object>> steps;  // 思考过程
+    private List<Map<String, Object>> steps;  // 必须是 List<Map<String, Object>>
 
     public ChatMessage(int id, String role, String content, String createdAt, List<Map<String, Object>> steps) {
         this.id = id;
