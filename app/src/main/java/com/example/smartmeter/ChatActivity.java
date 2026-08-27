@@ -22,6 +22,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -72,9 +74,9 @@ public class ChatActivity extends AppCompatActivity {
         rvMessages.setLayoutManager(new LinearLayoutManager(this));
         rvMessages.setAdapter(adapter);
 
-        // 设置思考过程切换监听（用于保存状态，当前仅用于日志）
+        // 设置思考过程切换监听
         adapter.setThinkingToggleListener((position, isExpanded) -> {
-            // 可以保存展开状态，暂不实现持久化
+            // 可保存展开状态，暂不实现
             Log.d(TAG, "Thinking toggled: position=" + position + ", expanded=" + isExpanded);
         });
 
@@ -259,14 +261,20 @@ public class ChatActivity extends AppCompatActivity {
                             String role = obj.getString("role");
                             String content = obj.getString("content");
                             String createdAt = obj.getString("created_at");
-                            // 解析 steps
+                            // 解析 steps（手动转换为 Map 列表）
                             List<Map<String, Object>> steps = null;
                             if (obj.has("steps") && !obj.isNull("steps")) {
                                 JSONArray stepsArray = obj.getJSONArray("steps");
                                 steps = new ArrayList<>();
                                 for (int j = 0; j < stepsArray.length(); j++) {
                                     JSONObject stepObj = stepsArray.getJSONObject(j);
-                                    steps.add((Map<String, Object>) stepObj.toMap());
+                                    Map<String, Object> stepMap = new HashMap<>();
+                                    Iterator<String> keys = stepObj.keys();
+                                    while (keys.hasNext()) {
+                                        String key = keys.next();
+                                        stepMap.put(key, stepObj.get(key));
+                                    }
+                                    steps.add(stepMap);
                                 }
                             }
                             newMessages.add(new ChatMessage(
@@ -336,13 +344,20 @@ public class ChatActivity extends AppCompatActivity {
                         String role = obj.getString("role");
                         String content = obj.getString("content");
                         String createdAt = obj.getString("created_at");
+                        // 解析 steps
                         List<Map<String, Object>> steps = null;
                         if (obj.has("steps") && !obj.isNull("steps")) {
                             JSONArray stepsArray = obj.getJSONArray("steps");
                             steps = new ArrayList<>();
                             for (int j = 0; j < stepsArray.length(); j++) {
                                 JSONObject stepObj = stepsArray.getJSONObject(j);
-                                steps.add((Map<String, Object>) stepObj.toMap());
+                                Map<String, Object> stepMap = new HashMap<>();
+                                Iterator<String> keys = stepObj.keys();
+                                while (keys.hasNext()) {
+                                    String key = keys.next();
+                                    stepMap.put(key, stepObj.get(key));
+                                }
+                                steps.add(stepMap);
                             }
                         }
                         ChatMessage assistantMsg = new ChatMessage(
@@ -372,6 +387,6 @@ public class ChatActivity extends AppCompatActivity {
 
     private void refreshSessionTitle() {
         // 重新加载会话列表，更新标题
-        loadSessions(); // 简单处理，会重载所有会话
+        loadSessions();
     }
 }
