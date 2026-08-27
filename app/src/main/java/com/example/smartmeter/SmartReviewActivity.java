@@ -25,7 +25,6 @@ import okhttp3.Response;
 
 public class SmartReviewActivity extends AppCompatActivity {
 
-    // ===== 直接定义 BASE_URL =====
     private static final String BASE_URL = "http://192.168.10.12:5000";
 
     private RecyclerView reviewRecyclerView;
@@ -37,13 +36,13 @@ public class SmartReviewActivity extends AppCompatActivity {
 
     public static class ReviewItem {
         public int id;
-        public String roomName, readDate, readTime, timeLabel, photoPath;
+        public String roomName, readDate, readTime, timeLabel, photoPath, resourceType;
         public int pointId;
         public double reading;
         public boolean confirmed, modified;
 
         public ReviewItem(int id, String roomName, String readDate, String readTime,
-                          int pointId, String timeLabel, String photoPath,
+                          int pointId, String timeLabel, String photoPath, String resourceType,
                           double reading, boolean confirmed, boolean modified) {
             this.id = id;
             this.roomName = roomName;
@@ -52,6 +51,7 @@ public class SmartReviewActivity extends AppCompatActivity {
             this.pointId = pointId;
             this.timeLabel = timeLabel;
             this.photoPath = photoPath;
+            this.resourceType = resourceType;
             this.reading = reading;
             this.confirmed = confirmed;
             this.modified = modified;
@@ -100,6 +100,7 @@ public class SmartReviewActivity extends AppCompatActivity {
                             entity.pointId,
                             entity.timeLabel,
                             entity.photoPath,
+                            entity.resourceType != null ? entity.resourceType : "electric",
                             entity.manualReading > 0 ? entity.manualReading : 0,
                             false,
                             false

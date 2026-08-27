@@ -52,6 +52,15 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ViewHolder
         holder.reading.setText(String.format("%.2f", item.reading));
         holder.status.setText(item.confirmed ? "✅ 已确认" : "⏳ 待确认");
 
+        // 资源类型图标
+        String icon;
+        switch (item.resourceType) {
+            case "cold_water": icon = "💧 "; break;
+            case "hot_water": icon = "🔥 "; break;
+            default: icon = "💡 "; break;
+        }
+        holder.resourceType.setText(icon + item.resourceType);
+
         File file = new File(item.photoPath);
         if (file.exists()) {
             Glide.with(holder.itemView.getContext())
@@ -87,7 +96,7 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ViewHolder
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView thumbnail;
-        TextView roomName, dateTime, reading, status;
+        TextView roomName, dateTime, reading, status, resourceType;
         Button confirmBtn, editBtn;
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -96,6 +105,7 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ViewHolder
             dateTime = itemView.findViewById(R.id.dateTime);
             reading = itemView.findViewById(R.id.reading);
             status = itemView.findViewById(R.id.status);
+            resourceType = itemView.findViewById(R.id.resourceType);
             confirmBtn = itemView.findViewById(R.id.confirmBtn);
             editBtn = itemView.findViewById(R.id.editBtn);
         }

@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">SmartMeterApp</string>
+    <!-- 新增 -->
+    <string name="meter_type_label">表类型：</string>
+    <string name="meter_type_electric">电表</string>
+    <string name="meter_type_cold_water">冷水表</string>
+    <string name="meter_type_hot_water">热水表</string>
 </resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="resource_types">
+        <item>电表</item>
+        <item>冷水表</item>
+        <item>热水表</item>
+    </string-array>
+</resources>

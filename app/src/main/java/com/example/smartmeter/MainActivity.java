@@ -1,11 +1,11 @@
 package com.example.smartmeter;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -22,17 +22,16 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                Fragment fragment = null;
                 if (item.getItemId() == R.id.nav_overview) {
-                    fragment = new OverviewFragment();
-                } else if (item.getItemId() == R.id.nav_meter) {
-                    fragment = new MeterInputFragment();
-                }
-                if (fragment != null) {
                     getSupportFragmentManager()
                             .beginTransaction()
-                            .replace(R.id.fragment_container, fragment)
+                            .replace(R.id.fragment_container, new OverviewFragment())
                             .commit();
+                    return true;
+                } else if (item.getItemId() == R.id.nav_meter) {
+                    // 跳转到 SmartPhotoActivity 而不是 Fragment
+                    Intent intent = new Intent(MainActivity.this, SmartPhotoActivity.class);
+                    startActivity(intent);
                     return true;
                 }
                 return false;

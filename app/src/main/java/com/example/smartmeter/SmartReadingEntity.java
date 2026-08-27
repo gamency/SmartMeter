@@ -14,20 +14,20 @@ public class SmartReadingEntity {
     public String readTime;
     public int pointId;
     public String timeLabel;
-    public String photoPath;        // 本地文件路径
-    public double manualReading;    // 手动输入值（如果手动输入）
+    public String photoPath;
+    public double manualReading;
     public String status;           // 'pending', 'synced', 'confirmed'
-    public boolean isManual;        // true 表示手动输入，false 表示待AI识别
+    public boolean isManual;
     public long createdAt;
-    public String batchId;          // 同步后由后端返回
+    public String batchId;
+    public String resourceType;     // 新增：'electric', 'cold_water', 'hot_water'
 
-    // 默认构造函数（Room 需要）
     public SmartReadingEntity() {}
 
-    // 带参构造
     public SmartReadingEntity(int roomId, String roomName, String readDate, String readTime,
                               int pointId, String timeLabel, String photoPath,
-                              double manualReading, String status, boolean isManual) {
+                              double manualReading, String status, boolean isManual,
+                              String resourceType) {
         this.roomId = roomId;
         this.roomName = roomName;
         this.readDate = readDate;
@@ -38,6 +38,7 @@ public class SmartReadingEntity {
         this.manualReading = manualReading;
         this.status = status;
         this.isManual = isManual;
+        this.resourceType = resourceType;
         this.createdAt = System.currentTimeMillis();
     }
 }

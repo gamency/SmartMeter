@@ -25,7 +25,7 @@
         android:background="#FFFFFF"
         android:padding="12dp"
         android:elevation="2dp"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="12dp">
 
         <TextView
             android:layout_width="wrap_content"
@@ -48,6 +48,33 @@
             android:text="上月: --"
             android:textSize="12sp"
             android:textColor="#9CA3AF" />
+    </LinearLayout>
+
+    <!-- ===== 新增：表类型选择 ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="#FFFFFF"
+        android:padding="12dp"
+        android:elevation="2dp"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="表类型："
+            android:textSize="14sp"
+            android:textColor="#1A1A2E" />
+
+        <Spinner
+            android:id="@+id/resourceTypeSpinner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:entries="@array/resource_types" />
     </LinearLayout>
 
     <!-- 拍照按钮 -->

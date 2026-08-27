@@ -5,7 +5,7 @@ import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import android.content.Context;
 
-@Database(entities = {SmartReadingEntity.class}, version = 1, exportSchema = false)
+@Database(entities = {SmartReadingEntity.class}, version = 2, exportSchema = false)
 public abstract class SmartReadingDatabase extends RoomDatabase {
     public abstract SmartReadingDao smartReadingDao();
 
@@ -17,6 +17,7 @@ public abstract class SmartReadingDatabase extends RoomDatabase {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     SmartReadingDatabase.class, "smart_readings.db")
+                            .fallbackToDestructiveMigration() // 开发阶段清空旧数据
                             .build();
                 }
             }
