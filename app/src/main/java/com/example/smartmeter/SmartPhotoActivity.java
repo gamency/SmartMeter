@@ -79,7 +79,8 @@ public class SmartPhotoActivity extends AppCompatActivity {
     private Button btnElectric, btnColdWater, btnHotWater;
     private Button btnModeRoom, btnModeType;
     private Button btnContinuous;
-    private Button btnAutoType;  // 表型自动切换开关
+    private Button btnAutoType;
+    private Button btnPrevRoom, btnNextRoom;  // 左右切换按钮
 
     private SmartReadingDatabase db;
     private List<RoomItem> roomList = new ArrayList<>();
@@ -88,9 +89,9 @@ public class SmartPhotoActivity extends AppCompatActivity {
     private String selectedResourceType = "electric";
 
     // 状态
-    private int currentMode = MODE_BY_TYPE;  // 默认按表型
+    private int currentMode = MODE_BY_TYPE;
     private boolean isContinuous = true;
-    private boolean isAutoType = false;      // 默认关闭
+    private boolean isAutoType = false;
 
     // 资源类型常量
     private static final String TYPE_ELECTRIC = "electric";
@@ -127,6 +128,9 @@ public class SmartPhotoActivity extends AppCompatActivity {
         btnContinuous = findViewById(R.id.btn_continuous);
         btnAutoType = findViewById(R.id.btn_auto_type);
 
+        btnPrevRoom = findViewById(R.id.btn_prev_room);
+        btnNextRoom = findViewById(R.id.btn_next_room);
+
         pendingRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         // 加载用户偏好
@@ -146,6 +150,10 @@ public class SmartPhotoActivity extends AppCompatActivity {
 
         // 表型自动切换开关
         btnAutoType.setOnClickListener(v -> toggleAutoType());
+
+        // 左右切换按钮
+        btnPrevRoom.setOnClickListener(v -> switchRoom(-1));
+        btnNextRoom.setOnClickListener(v -> switchRoom(1));
 
         // 拍照按钮
         takePhotoBtn.setOnClickListener(v -> checkPermissionAndTakePhoto());
@@ -213,12 +221,10 @@ public class SmartPhotoActivity extends AppCompatActivity {
         savePreferences();
         // 切换模式时，自动调整到合理位置
         if (mode == MODE_BY_TYPE) {
-            // 按表型：保持当前表型，房间跳到当前楼层第一个房间
             int currentFloor = roomList.get(roomSpinner.getSelectedItemPosition()).getFloor();
             int firstRoom = findFirstRoomInFloor(currentFloor);
             if (firstRoom != -1) roomSpinner.setSelection(firstRoom);
         } else {
-            // 按房间：保持当前房间，表型重置为第一个
             selectResourceType(0);
         }
         updateCurrentDisplay();
@@ -287,6 +293,23 @@ public class SmartPhotoActivity extends AppCompatActivity {
             btnAutoType.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFEF4444));
             btnAutoType.setTextColor(0xFFFFFFFF);
         }
+    }
+
+    // ================================================================
+    // 房间切换（左右箭头按钮）
+    // ================================================================
+    private void switchRoom(int direction) {
+        if (roomList.isEmpty()) return;
+        int currentPos = roomSpinner.getSelectedItemPosition();
+        if (currentPos < 0) currentPos = 0;
+        int newPos = (currentPos + direction) % roomList.size();
+        if (newPos < 0) newPos = roomList.size() - 1;
+        roomSpinner.setSelection(newPos);
+        // 触发选中事件，由 OnItemSelectedListener 处理
+        updateCurrentDisplay();
+        Snackbar.make(findViewById(android.R.id.content),
+                "切换到 " + roomList.get(newPos).getName(),
+                Snackbar.LENGTH_SHORT).show();
     }
 
     // ================================================================

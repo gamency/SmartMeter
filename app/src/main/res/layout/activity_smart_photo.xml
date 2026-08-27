@@ -62,30 +62,61 @@
             android:textColor="#1565C0" />
     </LinearLayout>
 
-    <!-- ===== 房间选择 ===== -->
+    <!-- ===== 房间选择（增加左右箭头按钮） ===== -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:background="#FFFFFF"
-        android:padding="12dp"
+        android:padding="8dp"
         android:elevation="2dp"
         android:layout_marginBottom="8dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="房间："
-            android:textSize="14sp"
-            android:textColor="#1A1A2E" />
+        <Button
+            android:id="@+id/btn_prev_room"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:text="◀"
+            android:backgroundTint="#E2E8F0"
+            android:textColor="#1A1A2E"
+            android:textSize="16sp"
+            android:padding="0dp"
+            android:layout_marginEnd="4dp" />
 
-        <Spinner
-            android:id="@+id/roomSpinner"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="8dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="房间："
+                android:textSize="14sp"
+                android:textColor="#1A1A2E" />
+
+            <Spinner
+                android:id="@+id/roomSpinner"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp" />
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_next_room"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:text="▶"
+            android:backgroundTint="#E2E8F0"
+            android:textColor="#1A1A2E"
+            android:textSize="16sp"
+            android:padding="0dp"
+            android:layout_marginStart="4dp" />
 
         <TextView
             android:id="@+id/lastReadingText"
@@ -93,7 +124,8 @@
             android:layout_height="wrap_content"
             android:text="上月: --"
             android:textSize="12sp"
-            android:textColor="#9CA3AF" />
+            android:textColor="#9CA3AF"
+            android:layout_marginStart="8dp" />
     </LinearLayout>
 
     <!-- ===== 抄表模式切换 ===== -->
@@ -135,7 +167,7 @@
             android:paddingHorizontal="16dp" />
     </LinearLayout>
 
-    <!-- ===== 表型自动切换开关（新增） ===== -->
+    <!-- ===== 表型自动切换开关 ===== -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
