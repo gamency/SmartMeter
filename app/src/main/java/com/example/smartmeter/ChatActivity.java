@@ -80,6 +80,9 @@ public class ChatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
         // 初始化视图
         drawerLayout = findViewById(R.id.drawer_layout);
         sidebar = findViewById(R.id.sidebar);
