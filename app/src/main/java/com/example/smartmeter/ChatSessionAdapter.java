@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
@@ -41,7 +42,7 @@ public class ChatSessionAdapter extends RecyclerView.Adapter<ChatSessionAdapter.
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(android.R.layout.simple_list_item_1, parent, false);
+                .inflate(R.layout.item_session, parent, false);
         return new ViewHolder(view);
     }
 
@@ -49,9 +50,18 @@ public class ChatSessionAdapter extends RecyclerView.Adapter<ChatSessionAdapter.
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ChatSession session = sessions.get(position);
         holder.tvTitle.setText(session.getTitle());
-        holder.tvTitle.setCompoundDrawablesWithIntrinsicBounds(
-                session.getId() == currentSessionId ? R.drawable.ic_check_mark : 0,
-                0, 0, 0);
+
+        boolean isCurrent = session.getId() == currentSessionId;
+        if (isCurrent) {
+            holder.tvTitle.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.primary_blue));
+            holder.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_check_mark, 0);
+            holder.itemView.setBackgroundColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.primary_blue_light));
+        } else {
+            holder.tvTitle.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), android.R.color.black));
+            holder.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+            holder.itemView.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        }
+
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onSessionClick(session);
         });
@@ -66,8 +76,7 @@ public class ChatSessionAdapter extends RecyclerView.Adapter<ChatSessionAdapter.
         TextView tvTitle;
         ViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvTitle = (TextView) itemView;
-            tvTitle.setPadding(32, 16, 16, 16);
+            tvTitle = itemView.findViewById(R.id.tv_session_title);
         }
     }
 }

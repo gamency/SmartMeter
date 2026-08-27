@@ -14,10 +14,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -43,6 +41,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import androidx.appcompat.widget.Toolbar;
 
 public class ChatActivity extends AppCompatActivity {
 
@@ -50,6 +49,7 @@ public class ChatActivity extends AppCompatActivity {
     private static final String PREF_CURRENT_SESSION = "current_session_id";
 
     private DrawerLayout drawerLayout;
+    private View sidebar;
     private RecyclerView rvMessages, rvSessions;
     private EditText etMessage;
     private Button btnSend;
@@ -68,11 +68,12 @@ public class ChatActivity extends AppCompatActivity {
     private Call currentCall;
     private int currentSessionId = -1;
 
-    // 计时器
     private Timer timer;
     private int elapsedSeconds = 0;
     private boolean isWaitingResponse = false;
     private Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    private int sidebarWidth = 280;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +82,7 @@ public class ChatActivity extends AppCompatActivity {
 
         // 初始化视图
         drawerLayout = findViewById(R.id.drawer_layout);
+        sidebar = findViewById(R.id.sidebar);
         rvMessages = findViewById(R.id.rv_messages);
         rvSessions = findViewById(R.id.rv_sessions);
         etMessage = findViewById(R.id.et_message);
@@ -90,6 +92,32 @@ public class ChatActivity extends AppCompatActivity {
         tvSessionsCount = findViewById(R.id.tv_sessions_count);
         btnMenu = findViewById(R.id.btn_menu);
         btnNewSessionSidebar = findViewById(R.id.btn_new_session_sidebar);
+
+        // 设置 Toolbar（去除标题）
+//        Toolbar toolbar = findViewById(R.id.toolbar_chat);
+//        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
+
+        // 侧边栏推入效果（只平移，不缩放，更稳定）
+        drawerLayout.setScrimColor(Color.TRANSPARENT);
+        drawerLayout.addDrawerListener(new DrawerLayout.SimpleDrawerListener() {
+            @Override
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+                float move = sidebarWidth * slideOffset;
+                View content = drawerLayout.getChildAt(0);
+                content.setTranslationX(move);
+            }
+
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                View content = drawerLayout.getChildAt(0);
+                content.setTranslationX(0);
+            }
+        });
+
+        sidebarWidth = (int) (280 * getResources().getDisplayMetrics().density);
 
         // 设置消息列表
         messageAdapter = new ChatMessageAdapter(messageList);
@@ -108,14 +136,14 @@ public class ChatActivity extends AppCompatActivity {
         rvSessions.setLayoutManager(new LinearLayoutManager(this));
         rvSessions.setAdapter(sessionAdapter);
 
-        // 初始化 OkHttp（无超时）
+        // OkHttp
         client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(0, TimeUnit.MILLISECONDS)
                 .writeTimeout(60, TimeUnit.SECONDS)
                 .build();
 
-        // 事件绑定
+        // 事件
         btnMenu.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
         btnNewSessionSidebar.setOnClickListener(v -> {
             createNewSession();
@@ -130,11 +158,10 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
-        // 加载会话
         loadSessions();
     }
 
-    // ===== 计时器控制 =====
+    // ===== 计时器 =====
     private void startTimer() {
         if (timer != null) {
             timer.cancel();
@@ -176,20 +203,17 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-    // ===== 发送按钮状态切换 =====
     private void updateSendButton(boolean isSending) {
         if (isSending) {
             btnSend.setText("停止");
-            btnSend.setBackgroundTintList(ContextCompat.getColorStateList(this, android.R.color.holo_red_dark));
-            btnSend.setEnabled(true);
+            btnSend.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFEF4444));
         } else {
             btnSend.setText("发送");
-            btnSend.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.primary_blue));
-            btnSend.setEnabled(true);
+            btnSend.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.primary_blue)));
         }
+        btnSend.setEnabled(true);
     }
 
-    // ===== 停止请求 =====
     private void stopRequest() {
         if (currentCall != null && !currentCall.isCanceled()) {
             currentCall.cancel();
@@ -483,7 +507,6 @@ public class ChatActivity extends AppCompatActivity {
                             messageList.add(assistantMsg);
                             messageAdapter.notifyItemInserted(messageList.size() - 1);
                             rvMessages.scrollToPosition(messageList.size() - 1);
-                            // 刷新会话列表（更新标题）
                             loadSessions();
                         });
                     } catch (Exception e) {
