@@ -123,24 +123,59 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             // 思考过程
             if (msg.hasSteps()) {
                 llThinking.setVisibility(View.VISIBLE);
-                // 构建思考内容
                 StringBuilder sb = new StringBuilder();
+
                 for (Map<String, Object> step : msg.getSteps()) {
-                    String type = step.get("type") != null ? step.get("type").toString() : "step";
-                    String content = step.get("content") != null ? step.get("content").toString() : "";
-                    if (type.equals("thinking")) {
-                        sb.append("💭 ").append(content).append("\n");
-                    } else if (type.equals("action")) {
-                        sb.append("🔧 ").append(content).append("\n");
-                    } else if (type.equals("observation")) {
-                        sb.append("📤 ").append(content).append("\n\n");
-                    } else {
-                        sb.append(content).append("\n");
+                    String name = step.get("name") != null ? step.get("name").toString() : "";
+                    String input = step.get("input") != null ? step.get("input").toString() : "";
+                    String output = step.get("output") != null ? step.get("output").toString() : "";
+                    String status = step.get("status") != null ? step.get("status").toString() : "";
+                    String icon = step.get("icon") != null ? step.get("icon").toString() : "";
+                    String layer = step.get("layer") != null ? "第" + step.get("layer") + "层" : "";
+
+                    String statusEmoji;
+                    switch (status) {
+                        case "success": statusEmoji = "✅"; break;
+                        case "error": statusEmoji = "❌"; break;
+                        case "processing": statusEmoji = "⏳"; break;
+                        case "hit": statusEmoji = "✅"; break;
+                        case "miss": statusEmoji = "❌"; break;
+                        default: statusEmoji = "";
                     }
+
+                    if (!TextUtils.isEmpty(name)) {
+                        sb.append(icon).append(" ").append(layer).append(" ").append(name);
+                        if (!TextUtils.isEmpty(statusEmoji)) {
+                            sb.append(" ").append(statusEmoji);
+                        }
+                        sb.append("\n");
+                    }
+
+                    if (!TextUtils.isEmpty(input)) {
+                        sb.append("  📥 ").append(input).append("\n");
+                    }
+
+                    if (!TextUtils.isEmpty(output)) {
+                        sb.append("  📤 ").append(output).append("\n");
+                    }
+
+                    List<Map<String, Object>> children = (List<Map<String, Object>>) step.get("children");
+                    if (children != null && !children.isEmpty()) {
+                        for (Map<String, Object> child : children) {
+                            String childLabel = child.get("label") != null ? child.get("label").toString() : "";
+                            String childContent = child.get("content") != null ? child.get("content").toString() : "";
+                            sb.append("    🔹 ").append(childLabel);
+                            if (!TextUtils.isEmpty(childContent)) {
+                                sb.append(": ").append(childContent);
+                            }
+                            sb.append("\n");
+                        }
+                    }
+                    sb.append("\n");
                 }
+
                 tvThinkingSteps.setText(sb.toString().trim());
 
-                // 恢复展开状态（通过 tag 保存）
                 Boolean savedState = (Boolean) itemView.getTag(R.id.tag_thinking_state);
                 if (savedState != null) {
                     isExpanded = savedState;
@@ -149,7 +184,6 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                 }
                 updateThinkingUI();
 
-                // 点击切换
                 tvThinkingToggle.setOnClickListener(v -> {
                     isExpanded = !isExpanded;
                     itemView.setTag(R.id.tag_thinking_state, isExpanded);

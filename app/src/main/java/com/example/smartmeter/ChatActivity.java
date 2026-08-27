@@ -96,7 +96,7 @@ public class ChatActivity extends AppCompatActivity {
         // 初始化 OkHttp（超时设为一个非常大的值，实际永不超时）
         client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(300, TimeUnit.SECONDS)    // 5分钟，实际够用
+                .readTimeout(0, TimeUnit.SECONDS)    // 5分钟，实际够用
                 .writeTimeout(60, TimeUnit.SECONDS)
                 .build();
 
