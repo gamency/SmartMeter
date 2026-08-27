@@ -6,6 +6,7 @@ import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -29,8 +30,12 @@ public class MainActivity extends AppCompatActivity {
                             .commit();
                     return true;
                 } else if (item.getItemId() == R.id.nav_meter) {
-                    // 跳转到 SmartPhotoActivity 而不是 Fragment
                     Intent intent = new Intent(MainActivity.this, SmartPhotoActivity.class);
+                    startActivity(intent);
+                    return true;
+                } else if (item.getItemId() == R.id.nav_chat) {
+                    // 跳转到独立聊天页面
+                    Intent intent = new Intent(MainActivity.this, ChatActivity.class);
                     startActivity(intent);
                     return true;
                 }

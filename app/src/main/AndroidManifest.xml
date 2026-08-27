@@ -46,6 +46,11 @@
         <activity android:name=".SmartPhotoActivity" />
         <activity android:name=".SmartReviewActivity" />
 
+        <activity
+            android:name=".ChatActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- ===== FileProvider（用于拍照保存图片） ===== -->
         <provider
             android:name="androidx.core.content.FileProvider"

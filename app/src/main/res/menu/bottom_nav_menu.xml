@@ -2,10 +2,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_overview"
-        android:title="用电总览"
-        android:icon="@drawable/ic_overview" />
+        android:icon="@drawable/ic_home"
+        android:title="用电总览" />
     <item
         android:id="@+id/nav_meter"
-        android:title="离线抄表"
-        android:icon="@drawable/ic_meter" />
+        android:icon="@drawable/ic_meter"
+        android:title="抄表" />
+    <item
+        android:id="@+id/nav_chat"
+        android:icon="@drawable/ic_chat"
+        android:title="助手" />
 </menu>
