@@ -2,7 +2,6 @@ package com.example.smartmeter;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -15,14 +14,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
-import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -52,8 +43,8 @@ public class OverviewFragment extends Fragment {
     private LinearLayout distributionContainer;
     private TextView tvEmptyTenant;
 
-    // 趋势折线图
-    private LineChart lineChartTrend;
+    // 趋势柱状图容器
+    private LinearLayout trendContainer;
     private TextView tvTrendEmpty;
 
     // 日期标签
@@ -85,9 +76,7 @@ public class OverviewFragment extends Fragment {
         tvPeriod = view.findViewById(R.id.tv_period);
         distributionContainer = view.findViewById(R.id.distribution_container);
         tvEmptyTenant = view.findViewById(R.id.tv_empty_tenant);
-
-        // 趋势折线图
-        lineChartTrend = view.findViewById(R.id.line_chart_trend);
+        trendContainer = view.findViewById(R.id.trend_container);
         tvTrendEmpty = view.findViewById(R.id.tv_trend_empty);
 
         tagMonth = view.findViewById(R.id.tag_month);
@@ -147,11 +136,12 @@ public class OverviewFragment extends Fragment {
                                 periodStart = start;
                                 periodEnd = end;
                                 tvPeriod.setText(periodStart + " ~ " + periodEnd);
+                                // 取消所有标签的选中状态
                                 TextView[] tags = {tagMonth, tagLastMonth, tag30d, tag90d};
                                 for (TextView tag : tags) {
                                     tag.setSelected(false);
                                     tag.setTextColor(getResources().getColor(R.color.text_secondary));
-                                    tag.setBackgroundResource(R.drawable.bg_filter_tag);
+                                    tag.setBackgroundResource(R.drawable.bg_filter_chip);
                                 }
                                 Log.d(TAG, "自定义日期: " + periodStart + " ~ " + periodEnd);
                                 refreshAllData();
@@ -221,11 +211,9 @@ public class OverviewFragment extends Fragment {
         for (TextView tag : tags) {
             tag.setSelected(false);
             tag.setTextColor(getResources().getColor(R.color.text_secondary));
-            tag.setBackgroundResource(R.drawable.bg_filter_tag);
         }
         selectedTag.setSelected(true);
-        selectedTag.setTextColor(getResources().getColor(R.color.bg_card));
-        selectedTag.setBackgroundResource(R.drawable.bg_filter_tag);
+        selectedTag.setTextColor(getResources().getColor(R.color.surface));
     }
 
     // ===== 刷新所有数据 =====
@@ -282,7 +270,7 @@ public class OverviewFragment extends Fragment {
                                 llDiff.setBackgroundResource(R.drawable.bg_diff_normal);
                                 tvDiffValue.setTextColor(getResources().getColor(R.color.text_primary));
                                 tvDiffHint.setText("理想状态下两者数值基本持平");
-                                tvDiffHint.setTextColor(getResources().getColor(R.color.text_hint));
+                                tvDiffHint.setTextColor(getResources().getColor(R.color.text_secondary));
                             } else {
                                 llDiff.setBackgroundResource(R.drawable.bg_diff_warning);
                                 tvDiffValue.setTextColor(getResources().getColor(R.color.warning_orange));
@@ -353,12 +341,7 @@ public class OverviewFragment extends Fragment {
                             items.sort((a, b) -> Double.compare(b.usage, a.usage));
                             int count = Math.min(items.size(), 10);
 
-                            int[] colors = {
-                                    0xFF4A6CF7, 0xFF22C55E, 0xFFF59E0B, 0xFFEF4444,
-                                    0xFF8B5CF6, 0xFFEC4899, 0xFF14B8A6, 0xFFF97316,
-                                    0xFF6366F1, 0xFF84CC16
-                            };
-
+                            // 单色渐变：全部使用 primary
                             for (int i = 0; i < count; i++) {
                                 RoomItem item = items.get(i);
                                 double ratio = item.usage / finalMaxKwh;
@@ -367,7 +350,8 @@ public class OverviewFragment extends Fragment {
                                 View barFill = barView.findViewById(R.id.bar_fill);
                                 TextView valueView = barView.findViewById(R.id.bar_value);
                                 nameView.setText(item.name);
-                                barFill.setBackgroundColor(colors[i % colors.length]);
+                                // 全部使用 primary，根据排名调整透明度（可选）
+                                barFill.setBackgroundColor(getResources().getColor(R.color.primary));
                                 barFill.getLayoutParams().width = (int) (ratio * 300) + 20;
                                 valueView.setText(String.format("%.1f", item.usage));
                                 distributionContainer.addView(barView);
@@ -391,7 +375,7 @@ public class OverviewFragment extends Fragment {
         }).start();
     }
 
-    // ===== API：近30天整栋日总用电趋势（折线图） =====
+    // ===== API：近30天整栋日总用电趋势（柱状图） =====
     private void fetchTrend() {
         new Thread(() -> {
             try {
@@ -413,22 +397,50 @@ public class OverviewFragment extends Fragment {
                     String jsonData = response.body().string();
                     JSONArray jsonArray = new JSONArray(jsonData);
                     List<TrendItem> items = new ArrayList<>();
+                    double maxVal = 0;
                     for (int i = 0; i < jsonArray.length(); i++) {
                         JSONObject obj = jsonArray.getJSONObject(i);
                         double val = obj.optDouble("total", 0);
+                        if (val > maxVal) maxVal = val;
                         String dateStr = obj.getString("date");
                         items.add(new TrendItem(dateStr, val));
                     }
+                    final double finalMaxVal = maxVal > 0 ? maxVal : 1;
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() -> {
-                            if (items.isEmpty()) {
-                                lineChartTrend.setVisibility(View.GONE);
+                            trendContainer.removeAllViews();
+                            if (items.isEmpty() || finalMaxVal == 0) {
                                 tvTrendEmpty.setVisibility(View.VISIBLE);
                                 return;
                             }
                             tvTrendEmpty.setVisibility(View.GONE);
-                            lineChartTrend.setVisibility(View.VISIBLE);
-                            setupLineChart(items);
+
+                            int count = Math.min(items.size(), 30);
+                            for (int i = 0; i < count; i++) {
+                                TrendItem item = items.get(i);
+                                double ratio = item.value / finalMaxVal;
+                                View barView = getLayoutInflater().inflate(R.layout.item_trend_bar, null);
+                                TextView dateView = barView.findViewById(R.id.trend_date);
+                                View barFill = barView.findViewById(R.id.trend_fill);
+                                TextView valueView = barView.findViewById(R.id.trend_value);
+
+                                String[] parts = item.date.split("-");
+                                dateView.setText(parts[1] + "-" + parts[2]);
+
+                                int height = (int) (ratio * 100) + 10;
+                                barFill.getLayoutParams().height = height;
+
+                                // 峰值用橙色，其余用 primary
+                                if (item.value == finalMaxVal) {
+                                    barFill.setBackgroundColor(0xFFF59E0B);
+                                } else {
+                                    barFill.setBackgroundColor(getResources().getColor(R.color.primary));
+                                }
+                                valueView.setText(String.format("%.0f", item.value));
+                                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+                                barView.setLayoutParams(params);
+                                trendContainer.addView(barView);
+                            }
                         });
                     }
                 } else {
@@ -446,63 +458,6 @@ public class OverviewFragment extends Fragment {
                 }
             }
         }).start();
-    }
-
-    // ===== 配置折线图 =====
-    private void setupLineChart(List<TrendItem> items) {
-        // 1. 准备数据
-        List<Entry> entries = new ArrayList<>();
-        List<String> labels = new ArrayList<>();
-        for (int i = 0; i < items.size(); i++) {
-            TrendItem item = items.get(i);
-            entries.add(new Entry(i, (float) item.value));
-            String[] parts = item.date.split("-");
-            if (parts.length == 3) {
-                labels.add(parts[1] + "-" + parts[2]);
-            } else {
-                labels.add(item.date);
-            }
-        }
-
-        // 2. 创建 DataSet
-        LineDataSet dataSet = new LineDataSet(entries, "日总用电 (度)");
-        dataSet.setColor(getResources().getColor(R.color.primary_blue));
-        dataSet.setCircleColor(getResources().getColor(R.color.primary_blue));
-        dataSet.setCircleRadius(4f);
-        dataSet.setLineWidth(2f);
-        dataSet.setDrawValues(false);
-        dataSet.setDrawFilled(true);
-        dataSet.setFillColor(getResources().getColor(R.color.primary_blue_light));
-        dataSet.setFillAlpha(80);
-
-        // 3. 创建 LineData
-        LineData lineData = new LineData(dataSet);
-        lineChartTrend.setData(lineData);
-
-        // 4. 配置 X 轴
-        XAxis xAxis = lineChartTrend.getXAxis();
-        xAxis.setValueFormatter(new IndexAxisValueFormatter(labels));
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setGranularity(1f);
-        xAxis.setLabelCount(Math.min(labels.size(), 10), true);
-        xAxis.setDrawGridLines(false);
-        xAxis.setTextSize(10f);
-
-        // 5. 配置 Y 轴
-        YAxis yAxisLeft = lineChartTrend.getAxisLeft();
-        yAxisLeft.setDrawGridLines(true);
-        yAxisLeft.setAxisMinimum(0f);
-        yAxisLeft.setTextSize(10f);
-        lineChartTrend.getAxisRight().setEnabled(false);
-
-        // 6. 通用配置
-        lineChartTrend.getDescription().setEnabled(false);
-        lineChartTrend.setTouchEnabled(true);
-        lineChartTrend.setDragEnabled(true);
-        lineChartTrend.setScaleEnabled(true);
-        lineChartTrend.animateX(800);
-
-        lineChartTrend.invalidate();
     }
 
     // ===== 内部数据类 =====
