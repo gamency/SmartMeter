@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_page">
+
+    <!-- 顶部白色时间栏 -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="@dimen/padding_page"
+        android:paddingEnd="@dimen/padding_page"
+        android:paddingTop="12dp"
+        android:paddingBottom="8dp"
+        android:background="#FFFFFF">
+
+        <TextView
+            android:id="@+id/update_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:text="更新中..."
+            android:textSize="12sp"
+            android:textColor="@color/text_hint" />
+    </FrameLayout>
+
+    <!-- 灰色分割线 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider" />
+
+    <!-- ===== 可滚动内容 ===== -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingStart="@dimen/padding_page"
+        android:paddingEnd="@dimen/padding_page"
+        android:paddingTop="@dimen/space_card_vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- 1. 日期筛选卡片 -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/CardStyle"
+                android:layout_marginBottom="@dimen/space_card_vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <HorizontalScrollView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:scrollbars="none">
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:paddingVertical="4dp">
+
+                                <TextView
+                                    android:id="@+id/tag_month"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="本月"
+                                    android:paddingHorizontal="14dp"
+                                    android:paddingVertical="5dp"
+                                    android:background="@drawable/bg_filter_tag"
+                                    android:textColor="#FFFFFF"
+                                    android:textSize="13sp"
+                                    android:layout_marginEnd="@dimen/space_small" />
+
+                                <TextView
+                                    android:id="@+id/tag_last_month"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="上月"
+                                    android:paddingHorizontal="14dp"
+                                    android:paddingVertical="5dp"
+                                    android:background="@drawable/bg_filter_tag"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="13sp"
+                                    android:layout_marginEnd="@dimen/space_small" />
+
+                                <TextView
+                                    android:id="@+id/tag_30d"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="近30天"
+                                    android:paddingHorizontal="14dp"
+                                    android:paddingVertical="5dp"
+                                    android:background="@drawable/bg_filter_tag"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="13sp"
+                                    android:layout_marginEnd="@dimen/space_small" />
+
+                                <TextView
+                                    android:id="@+id/tag_90d"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="近90天"
+                                    android:paddingHorizontal="14dp"
+                                    android:paddingVertical="5dp"
+                                    android:background="@drawable/bg_filter_tag"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="13sp" />
+
+                            </LinearLayout>
+                        </HorizontalScrollView>
+
+                        <TextView
+                            android:id="@+id/btn_custom_date"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="自定义"
+                            android:textSize="13sp"
+                            android:textColor="@color/primary_blue"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="5dp"
+                            android:background="@drawable/bg_button_secondary"
+                            android:layout_marginStart="8dp" />
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tv_period"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="2026-07-01 ~ 2026-07-13"
+                        style="@style/TextSmall"
+                        android:layout_marginTop="@dimen/space_small" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- 2. 区间用电总览卡片 -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/CardStyle"
+                android:layout_marginBottom="@dimen/space_card_vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="区间用电总览"
+                        style="@style/TextTitle"
+                        android:layout_marginBottom="@dimen/space_small" />
+
+                    <TextView
+                        android:id="@+id/tv_total_usage"
+                        style="@style/TextDisplay"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="0 度"
+                        android:gravity="center"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="@dimen/space_item" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:weightSum="2">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:background="#E8F5E9"
+                            android:paddingVertical="10dp"
+                            android:radius="8dp"
+                            android:layout_marginEnd="4dp">
+
+                            <TextView
+                                android:id="@+id/tv_tenant_usage"
+                                style="@style/TextDisplay"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0 度"
+                                android:textColor="#2E7D32" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="租户承担"
+                                style="@style/TextSmall" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:background="#E3F2FD"
+                            android:paddingVertical="10dp"
+                            android:radius="8dp"
+                            android:layout_marginStart="4dp">
+
+                            <TextView
+                                android:id="@+id/tv_landlord_usage"
+                                style="@style/TextDisplay"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0 度"
+                                android:textColor="#1565C0" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="房东承担"
+                                style="@style/TextSmall" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/divider"
+                        android:layout_marginTop="@dimen/space_item" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- 3. 供电局读数对账卡片 -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/CardStyle"
+                android:layout_marginBottom="@dimen/space_card_vertical"
+                android:id="@+id/card_reconciliation">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="供电局读数对账"
+                        style="@style/TextTitle"
+                        android:layout_marginBottom="@dimen/space_small" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="@dimen/space_small">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="供电局同期总电量"
+                            style="@style/TextBody" />
+
+                        <TextView
+                            android:id="@+id/tv_power_kwh"
+                            style="@style/TextDisplay"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 度"
+                            android:textColor="@color/text_primary" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="@dimen/space_small">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="本人抄表汇总电量"
+                            style="@style/TextBody" />
+
+                        <TextView
+                            android:id="@+id/tv_meter_total"
+                            style="@style/TextDisplay"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 度"
+                            android:textColor="@color/text_primary" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/ll_diff"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="12dp"
+                        android:background="@drawable/bg_diff_normal"
+                        android:radius="8dp"
+                        android:layout_marginBottom="@dimen/space_small">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="用电差值"
+                            style="@style/TextBody" />
+
+                        <TextView
+                            android:id="@+id/tv_diff_value"
+                            style="@style/TextDisplay"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 度"
+                            android:textColor="@color/text_primary" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tv_diff_hint"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="理想状态下两者数值基本持平"
+                        style="@style/TextSmall" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- 4. TOP10租户卡片 -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/CardStyle"
+                android:layout_marginBottom="@dimen/space_card_vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="@dimen/space_small">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="本期用电TOP10租户"
+                            style="@style/TextTitle" />
+
+                        <TextView
+                            android:id="@+id/tv_view_full"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="查看完整账单 →"
+                            android:textSize="12sp"
+                            android:textColor="@color/primary_blue"
+                            android:padding="4dp"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/distribution_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                    <TextView
+                        android:id="@+id/tv_empty_tenant"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="本期所有租户用电平稳，无异常高耗电"
+                        style="@style/TextSmall"
+                        android:gravity="center"
+                        android:paddingVertical="20dp"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- 5. 近30天日总用电趋势（柱状图） -->
+<!-- 近30天日总用电趋势（折线图） -->
+<androidx.cardview.widget.CardView
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    style="@style/CardStyle"
+    android:layout_marginBottom="@dimen/space_card_vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="近30天整栋日总用电"
+            style="@style/TextTitle"
+            android:layout_marginBottom="@dimen/space_small" />
+
+        <!-- ===== 折线图 ===== -->
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/line_chart_trend"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginTop="8dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tv_trend_empty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="暂无数据"
+            style="@style/TextSmall"
+            android:gravity="center"
+            android:paddingVertical="16dp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

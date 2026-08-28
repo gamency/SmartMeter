@@ -1,58 +1,28 @@
 package com.example.smartmeter;
 
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static final int TYPE_USER = 0;
     private static final int TYPE_ASSISTANT = 1;
-    private static final int TYPE_TYPING = 2;
 
     private List<ChatMessage> messages;
-    private boolean isTyping = false;
-    private OnThinkingToggleListener thinkingToggleListener;
-
-    public interface OnThinkingToggleListener {
-        void onThinkingToggle(int position, boolean isExpanded);
-    }
 
     public ChatMessageAdapter(List<ChatMessage> messages) {
         this.messages = messages;
     }
 
-    public void setThinkingToggleListener(OnThinkingToggleListener listener) {
-        this.thinkingToggleListener = listener;
-    }
-
-    public void setTyping(boolean typing) {
-        if (isTyping != typing) {
-            isTyping = typing;
-            if (typing) {
-                notifyItemInserted(messages.size());
-            } else {
-                notifyItemRemoved(messages.size());
-            }
-        }
-    }
-
     @Override
     public int getItemViewType(int position) {
-        if (position == messages.size() && isTyping) {
-            return TYPE_TYPING;
-        }
         ChatMessage msg = messages.get(position);
         return "user".equals(msg.getRole()) ? TYPE_USER : TYPE_ASSISTANT;
     }
@@ -63,8 +33,6 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
         if (viewType == TYPE_USER) {
             return new UserViewHolder(inflater.inflate(R.layout.item_chat_message_user, parent, false));
-        } else if (viewType == TYPE_TYPING) {
-            return new TypingViewHolder(inflater.inflate(R.layout.item_chat_message_typing, parent, false));
         } else {
             return new AssistantViewHolder(inflater.inflate(R.layout.item_chat_message_assistant, parent, false));
         }
@@ -72,160 +40,32 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        ChatMessage msg = messages.get(position);
         if (holder instanceof UserViewHolder) {
-            ((UserViewHolder) holder).bind(messages.get(position));
+            ((UserViewHolder) holder).tvContent.setText(msg.getContent());
         } else if (holder instanceof AssistantViewHolder) {
-            ((AssistantViewHolder) holder).bind(messages.get(position), position);
+            ((AssistantViewHolder) holder).tvContent.setText(msg.getContent());
         }
     }
 
     @Override
     public int getItemCount() {
-        return messages.size() + (isTyping ? 1 : 0);
+        return messages.size();
     }
 
-    // ===== User ViewHolder =====
     static class UserViewHolder extends RecyclerView.ViewHolder {
-        TextView tvContent, tvTime;
+        TextView tvContent;
         UserViewHolder(@NonNull View itemView) {
             super(itemView);
             tvContent = itemView.findViewById(R.id.tv_user_content);
-            tvTime = itemView.findViewById(R.id.tv_user_time);
-        }
-        void bind(ChatMessage msg) {
-            tvContent.setText(msg.getContent());
-            tvTime.setText(formatTime(msg.getCreatedAt()));
         }
     }
 
-    // ===== Assistant ViewHolder =====
-    class AssistantViewHolder extends RecyclerView.ViewHolder {
-        TextView tvContent, tvTime;
-        TextView tvThinkingToggle;
-        LinearLayout llThinking, llThinkingContent;
-        TextView tvThinkingSteps;
-        boolean isExpanded = false;
-
+    static class AssistantViewHolder extends RecyclerView.ViewHolder {
+        TextView tvContent;
         AssistantViewHolder(@NonNull View itemView) {
             super(itemView);
             tvContent = itemView.findViewById(R.id.tv_assistant_content);
-            tvTime = itemView.findViewById(R.id.tv_assistant_time);
-            llThinking = itemView.findViewById(R.id.ll_thinking);
-            tvThinkingToggle = itemView.findViewById(R.id.tv_thinking_toggle);
-            llThinkingContent = itemView.findViewById(R.id.ll_thinking_content);
-            tvThinkingSteps = itemView.findViewById(R.id.tv_thinking_steps);
-        }
-
-        void bind(ChatMessage msg, int position) {
-            tvContent.setText(msg.getContent());
-            tvTime.setText(formatTime(msg.getCreatedAt()));
-
-            // 思考过程
-            if (msg.hasSteps()) {
-                llThinking.setVisibility(View.VISIBLE);
-                StringBuilder sb = new StringBuilder();
-
-                for (Map<String, Object> step : msg.getSteps()) {
-                    String name = step.get("name") != null ? step.get("name").toString() : "";
-                    String input = step.get("input") != null ? step.get("input").toString() : "";
-                    String output = step.get("output") != null ? step.get("output").toString() : "";
-                    String status = step.get("status") != null ? step.get("status").toString() : "";
-                    String icon = step.get("icon") != null ? step.get("icon").toString() : "";
-                    String layer = step.get("layer") != null ? "第" + step.get("layer") + "层" : "";
-
-                    String statusEmoji;
-                    switch (status) {
-                        case "success": statusEmoji = "✅"; break;
-                        case "error": statusEmoji = "❌"; break;
-                        case "processing": statusEmoji = "⏳"; break;
-                        case "hit": statusEmoji = "✅"; break;
-                        case "miss": statusEmoji = "❌"; break;
-                        default: statusEmoji = "";
-                    }
-
-                    if (!TextUtils.isEmpty(name)) {
-                        sb.append(icon).append(" ").append(layer).append(" ").append(name);
-                        if (!TextUtils.isEmpty(statusEmoji)) {
-                            sb.append(" ").append(statusEmoji);
-                        }
-                        sb.append("\n");
-                    }
-
-                    if (!TextUtils.isEmpty(input)) {
-                        sb.append("  📥 ").append(input).append("\n");
-                    }
-
-                    if (!TextUtils.isEmpty(output)) {
-                        sb.append("  📤 ").append(output).append("\n");
-                    }
-
-                    List<Map<String, Object>> children = (List<Map<String, Object>>) step.get("children");
-                    if (children != null && !children.isEmpty()) {
-                        for (Map<String, Object> child : children) {
-                            String childLabel = child.get("label") != null ? child.get("label").toString() : "";
-                            String childContent = child.get("content") != null ? child.get("content").toString() : "";
-                            sb.append("    🔹 ").append(childLabel);
-                            if (!TextUtils.isEmpty(childContent)) {
-                                sb.append(": ").append(childContent);
-                            }
-                            sb.append("\n");
-                        }
-                    }
-                    sb.append("\n");
-                }
-
-                tvThinkingSteps.setText(sb.toString().trim());
-
-                Boolean savedState = (Boolean) itemView.getTag(R.id.tag_thinking_state);
-                if (savedState != null) {
-                    isExpanded = savedState;
-                } else {
-                    isExpanded = false;
-                }
-                updateThinkingUI();
-
-                tvThinkingToggle.setOnClickListener(v -> {
-                    isExpanded = !isExpanded;
-                    itemView.setTag(R.id.tag_thinking_state, isExpanded);
-                    updateThinkingUI();
-                    if (thinkingToggleListener != null) {
-                        thinkingToggleListener.onThinkingToggle(position, isExpanded);
-                    }
-                });
-            } else {
-                llThinking.setVisibility(View.GONE);
-            }
-        }
-
-        private void updateThinkingUI() {
-            if (isExpanded) {
-                tvThinkingToggle.setText("💭 思考过程 ▼");
-                llThinkingContent.setVisibility(View.VISIBLE);
-            } else {
-                tvThinkingToggle.setText("💭 思考过程 ▶");
-                llThinkingContent.setVisibility(View.GONE);
-            }
         }
     }
-
-    // ===== Typing ViewHolder =====
-    static class TypingViewHolder extends RecyclerView.ViewHolder {
-        TypingViewHolder(@NonNull View itemView) {
-            super(itemView);
-        }
-    }
-
-    // ===== 工具方法 =====
-    private static String formatTime(String iso) {
-        if (TextUtils.isEmpty(iso)) return "";
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
-            java.util.Date date = sdf.parse(iso);
-            SimpleDateFormat out = new SimpleDateFormat("HH:mm", Locale.getDefault());
-            return out.format(date);
-        } catch (Exception e) {
-            return iso;
-        }
-    }
-
 }

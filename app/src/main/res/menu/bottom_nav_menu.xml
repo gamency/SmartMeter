@@ -2,14 +2,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_overview"
-        android:icon="@drawable/ic_home"
+        android:icon="@drawable/ic_home_outline"
         android:title="总览" />
     <item
         android:id="@+id/nav_meter"
-        android:icon="@drawable/ic_meter"
+        android:icon="@drawable/ic_camera_outline"
         android:title="抄表" />
     <item
         android:id="@+id/nav_chat"
-        android:icon="@drawable/ic_chat"
+        android:icon="@drawable/ic_chat_outline"
         android:title="助手" />
 </menu>

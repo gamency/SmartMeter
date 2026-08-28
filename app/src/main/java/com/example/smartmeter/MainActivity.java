@@ -19,35 +19,33 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // ===== 隐藏 ActionBar =====
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().hide();
-        }
-
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                Fragment fragment = null;
                 if (item.getItemId() == R.id.nav_overview) {
-                    getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.fragment_container, new OverviewFragment())
-                            .commit();
-                    return true;
+                    fragment = new OverviewFragment();
                 } else if (item.getItemId() == R.id.nav_meter) {
+                    // 继续使用原有的 SmartPhotoActivity 独立页面
                     Intent intent = new Intent(MainActivity.this, SmartPhotoActivity.class);
                     startActivity(intent);
                     return true;
                 } else if (item.getItemId() == R.id.nav_chat) {
-                    Intent intent = new Intent(MainActivity.this, ChatActivity.class);
-                    startActivity(intent);
+                    fragment = new ChatFragment(); // 保持原有 Fragment
+                }
+                if (fragment != null) {
+                    getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, fragment)
+                        .commit();
                     return true;
                 }
                 return false;
             }
         });
 
-        // 默认显示用电总览
+        // 默认选中总览
         bottomNavigationView.setSelectedItemId(R.id.nav_overview);
     }
 }

@@ -1,47 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- ===== 主色 ===== -->
+    <!-- 新颜色系统，同时保留旧颜色别名，让老代码继续能用 -->
+    <color name="primary">#4F46E5</color>
+    <color name="primary_light">#EEF2FF</color>
+    <color name="bg">#F8FAFC</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="text_primary">#1E293B</color>
+    <color name="text_secondary">#64748B</color>
+    <color name="divider">#E2E8F0</color>
+    <color name="success">#10B981</color>
+    <color name="warning">#F59E0B</color>
+    <color name="danger">#EF4444</color>
+
+    <!-- 保留旧颜色名，确保老代码不报错 -->
     <color name="primary_blue">#4F46E5</color>
     <color name="primary_blue_light">#EEF2FF</color>
     <color name="primary_blue_dark">#4338CA</color>
-
-    <!-- ===== 警示色 ===== -->
-    <color name="warning_orange">#F59E0B</color>
-    <color name="warning_orange_light">#FEF3C7</color>
-
-    <!-- ===== 成功色 ===== -->
-    <color name="success_green">#10B981</color>
-
-    <!-- ===== 文字色 ===== -->
-    <color name="text_primary">#0F172A</color>
-    <color name="text_secondary">#475569</color>
-    <color name="text_hint">#94A3B8</color>
-
-    <!-- ===== 背景色 ===== -->
     <color name="bg_page">#F8FAFC</color>
     <color name="bg_card">#FFFFFF</color>
-
-    <!-- ===== 分割线 ===== -->
-    <color name="divider">#E2E8F0</color>
-
-    <!-- ===== 灰色系 ===== -->
-    <color name="white">#FFFFFF</color>
-    <color name="gray_50">#F8FAFC</color>
-    <color name="gray_100">#F1F5F9</color>
-    <color name="gray_200">#E2E8F0</color>
-    <color name="gray_500">#64748B</color>
-    <color name="gray_700">#334155</color>
-    <color name="gray_900">#0F172A</color>
-
-    <!-- ===== 分户色板 ===== -->
-    <color name="room_1">#4F46E5</color>
-    <color name="room_2">#6366F1</color>
-    <color name="room_3">#818CF8</color>
-    <color name="room_4">#A5B4FC</color>
-    <color name="room_5">#C7D2FE</color>
-    <color name="room_6">#EEF2FF</color>
-    <color name="room_7">#4338CA</color>
-    <color name="room_8">#3730A3</color>
-    <color name="room_9">#312E81</color>
-    <color name="room_10">#1E1B4B</color>
+    <color name="text_hint">#94A3B8</color>
+    <color name="success_green">#10B981</color>
+    <color name="warning_orange">#F59E0B</color>
+    <color name="warning_orange_light">#FEF3C7</color>
 </resources>

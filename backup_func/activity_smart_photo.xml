@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F8FAFC">
+
+    <!-- 顶部白色标题栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="#FFFFFF"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:elevation="2dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📷 智能抄表"
+            android:textSize="17sp"
+            android:textColor="#0F172A"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/tv_progress_light"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="已拍 0"
+            android:textSize="13sp"
+            android:textColor="#94A3B8" />
+
+    </LinearLayout>
+
+    <!-- 灰色分割线 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E2E8F0" />
+
+    <!-- ===== 可滚动内容 ===== -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="80dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- 当前选择卡片 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="#FFFFFF"
+                android:padding="14dp"
+                android:radius="12dp"
+                android:elevation="2dp"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="房间"
+                    android:textSize="12sp"
+                    android:textColor="#94A3B8" />
+
+                <TextView
+                    android:id="@+id/tv_selected_room"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="请选择"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#0F172A"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="16dp"
+                    android:drawableEnd="@drawable/ic_chevron_down"
+                    android:drawablePadding="4dp" />
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="24dp"
+                    android:background="#E2E8F0"
+                    android:layout_marginEnd="12dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="表型"
+                    android:textSize="12sp"
+                    android:textColor="#94A3B8" />
+
+                <TextView
+                    android:id="@+id/tv_selected_type"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⚡电表"
+                    android:textSize="16sp"
+                    android:textColor="#4F46E5"
+                    android:textStyle="bold"
+                    android:layout_marginStart="8dp" />
+
+            </LinearLayout>
+
+            <!-- 拍照预览区 -->
+            <LinearLayout
+                android:id="@+id/ll_camera_preview"
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="#FFFFFF"
+                android:radius="12dp"
+                android:elevation="2dp"
+                android:layout_marginBottom="12dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/ic_camera_large"
+                    android:tint="#94A3B8" />
+
+                <TextView
+                    android:id="@+id/tv_camera_hint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="点击下方按钮拍照"
+                    android:textSize="14sp"
+                    android:textColor="#94A3B8"
+                    android:layout_marginTop="4dp" />
+
+            </LinearLayout>
+
+            <!-- 表型快捷切换 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:background="#FFFFFF"
+                android:padding="12dp"
+                android:radius="12dp"
+                android:elevation="2dp"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="表型："
+                    android:textSize="13sp"
+                    android:textColor="#94A3B8"
+                    android:layout_marginEnd="16dp" />
+
+                <Button
+                    android:id="@+id/btn_type_electric"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:text="⚡"
+                    android:textSize="20sp"
+                    android:backgroundTint="#4F46E5"
+                    android:radius="24dp"
+                    android:padding="0dp" />
+
+                <Button
+                    android:id="@+id/btn_type_cold"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:text="💧"
+                    android:textSize="20sp"
+                    android:backgroundTint="#E5E7EB"
+                    android:radius="24dp"
+                    android:padding="0dp"
+                    android:layout_marginStart="12dp" />
+
+                <Button
+                    android:id="@+id/btn_type_hot"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:text="🔥"
+                    android:textSize="20sp"
+                    android:backgroundTint="#E5E7EB"
+                    android:radius="24dp"
+                    android:padding="0dp"
+                    android:layout_marginStart="12dp" />
+
+            </LinearLayout>
+
+            <!-- 已拍记录标题 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📋 已拍记录"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#0F172A" />
+
+                <TextView
+                    android:id="@+id/tv_count_badge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#4F46E5"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp"
+                    android:radius="10dp"
+                    android:layout_marginStart="8dp" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:id="@+id/btn_clear_all"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="清空"
+                    android:textSize="12sp"
+                    android:textColor="#EF4444"
+                    android:padding="4dp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+            <!-- 缓存记录列表 -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/pendingRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+            <TextView
+                android:id="@+id/tv_empty_cached"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="暂无缓存数据\n点击下方按钮开始抄表"
+                android:textSize="13sp"
+                android:textColor="#94A3B8"
+                android:gravity="center"
+                android:paddingVertical="32dp"
+                android:visibility="gone"
+                android:lineSpacingExtra="6dp" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+    <!-- ===== 底部固定栏 ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="14dp"
+        android:background="#FFFFFF"
+        android:elevation="8dp">
+
+        <TextView
+            android:id="@+id/tv_network_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📶 在线"
+            android:textSize="12sp"
+            android:textColor="#10B981"
+            android:layout_marginEnd="12dp" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <!-- 主拍照按钮 -->
+        <Button
+            android:id="@+id/takePhotoBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:text="📸 拍照"
+            android:textSize="15sp"
+            android:backgroundTint="#4F46E5"
+            android:textColor="#FFFFFF"
+            android:paddingStart="28dp"
+            android:paddingEnd="28dp"
+            android:radius="24dp"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/syncBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="同步 0 条"
+            android:textSize="13sp"
+            android:backgroundTint="#4F46E5"
+            android:textColor="#FFFFFF"
+            android:enabled="false"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:radius="8dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,85 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 基础应用主题 -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="colorPrimary">@color/primary_blue</item>
-        <item name="colorPrimaryDark">@color/primary_blue_dark</item>
-        <item name="colorAccent">@color/primary_blue</item>
-        <item name="android:windowBackground">@color/bg_page</item>
-        <item name="android:statusBarColor">@color/primary_blue</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowContentTransitions">true</item>
-    </style>
-
-    <!-- 卡片样式 -->
-    <style name="CardStyle">
-        <item name="android:background">@drawable/bg_card</item>
-        <item name="android:elevation">2dp</item>
-        <item name="android:padding">16dp</item>
-        <item name="cardCornerRadius">12dp</item>
-        <item name="cardPreventCornerOverlap">true</item>
-        <item name="cardUseCompatPadding">true</item>
-    </style>
-
-    <!-- 主按钮 -->
-    <style name="ButtonPrimary" parent="Widget.AppCompat.Button">
-        <item name="android:background">@drawable/bg_button_primary</item>
-        <item name="android:textColor">#FFFFFF</item>
-        <item name="android:textSize">@dimen/text_body</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:paddingStart">@dimen/padding_button_h</item>
-        <item name="android:paddingEnd">@dimen/padding_button_h</item>
-        <item name="android:paddingTop">@dimen/padding_button_v</item>
-        <item name="android:paddingBottom">@dimen/padding_button_v</item>
-        <item name="android:minHeight">@dimen/height_button_normal</item>
-        <item name="android:gravity">center</item>
-        <item name="android:stateListAnimator">@null</item>
-    </style>
-
-    <!-- 次要按钮 -->
-    <style name="ButtonSecondary">
-        <item name="android:background">@drawable/bg_button_secondary</item>
-        <item name="android:textColor">@color/primary_blue</item>
-        <item name="android:textSize">@dimen/text_body</item>
-        <item name="android:paddingStart">@dimen/padding_button_h</item>
-        <item name="android:paddingEnd">@dimen/padding_button_h</item>
-        <item name="android:paddingTop">@dimen/padding_button_v</item>
-        <item name="android:paddingBottom">@dimen/padding_button_v</item>
-        <item name="android:minHeight">@dimen/height_button_normal</item>
-        <item name="android:gravity">center</item>
-        <item name="android:stateListAnimator">@null</item>
-    </style>
-
-    <!-- 文字层级 -->
-    <style name="TextDisplay">
-        <item name="android:textSize">32sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:fontFamily">sans-serif</item>
-    </style>
-
-    <!-- 大标题（之前定义过，但可能被误删） -->
+    <!-- 文字样式 -->
     <style name="TextTitle">
-        <item name="android:textSize">20sp</item>
+        <item name="android:textSize">18sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
+    <style name="TextDisplay">
+        <item name="android:textSize">32sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- 按钮样式 -->
+    <style name="ButtonPrimary" parent="Widget.MaterialComponents.Button">
+        <item name="android:backgroundTint">@color/primary</item>
+        <item name="android:textColor">@color/surface</item>
+    </style>
+
+    <style name="ButtonSecondary" parent="Widget.MaterialComponents.Button">
+        <item name="android:backgroundTint">@color/surface</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- Toolbar 样式 -->
+    <style name="SmartMeterToolbar" parent="Widget.MaterialComponents.Toolbar">
+        <item name="android:background">@color/surface</item>
+        <item name="android:elevation">0dp</item>
+        <item name="titleTextColor">@color/text_primary</item>
+        <item name="titleTextAppearance">@style/TextTitle</item>
+    </style>
+
+    <!-- 分割线样式 -->
+    <style name="SmartMeterDivider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:background">@color/divider</item>
+    </style>
+
+    <!-- 卡片样式（使用 Material 属性，但仅保留基础） -->
+    <style name="CardStyle">
+        <item name="android:background">@color/surface</item>
+        <item name="cardCornerRadius">12dp</item>
+        <item name="cardElevation">0dp</item>
+    </style>
+
+    <!-- 筛选按钮样式 -->
+    <style name="FilterChip">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:minWidth">60dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:background">@drawable/bg_filter_chip</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+    
+        <!-- 新增文字样式 -->
+
     <style name="TextBody">
-        <item name="android:textSize">16sp</item>
+        <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/text_secondary</item>
     </style>
 
     <style name="TextSmall">
-        <item name="android:textSize">14sp</item>
-        <item name="android:textColor">@color/text_hint</item>
-    </style>
-
-    <style name="TextMicro">
         <item name="android:textSize">12sp</item>
-        <item name="android:textColor">@color/text_hint</item>
+        <item name="android:textColor">@color/text_secondary</item>
     </style>
-
-    <!-- 兼容旧布局的 TextLarge -->
-    <style name="TextLarge" parent="TextDisplay" />
 
 </resources>
