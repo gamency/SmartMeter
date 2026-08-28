@@ -17,7 +17,8 @@
         android:textSize="12sp"
         android:textColor="#64748B"
         android:textStyle="bold"
-        android:gravity="center" />
+        android:gravity="center"
+        android:fontFamily="sans-serif" />
 
     <LinearLayout
         android:layout_width="0dp"
@@ -51,7 +52,8 @@
         android:layout_height="18dp"
         android:background="#4A6CF7"
         android:layout_marginStart="4dp"
-        android:layout_marginEnd="8dp" />
+        android:layout_marginEnd="8dp"
+        android:radius="4dp" />
 
     <TextView
         android:id="@+id/bar_value"
@@ -61,6 +63,7 @@
         android:textSize="13sp"
         android:textColor="#1A1A2E"
         android:textStyle="bold"
+        android:fontFamily="monospace"
         android:layout_marginEnd="8dp" />
 
 </LinearLayout>

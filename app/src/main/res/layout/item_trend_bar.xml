@@ -12,13 +12,15 @@
         android:layout_height="wrap_content"
         android:text="12"
         android:textSize="10sp"
-        android:textColor="#64748B" />
+        android:textColor="#64748B"
+        android:fontFamily="monospace" />
 
     <View
         android:id="@+id/trend_fill"
         android:layout_width="16dp"
         android:layout_height="20dp"
-        android:background="#4A6CF7" />
+        android:background="#4A6CF7"
+        android:radius="2dp" />
 
     <TextView
         android:id="@+id/trend_date"

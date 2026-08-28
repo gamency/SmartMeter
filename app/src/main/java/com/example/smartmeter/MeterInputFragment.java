@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
@@ -67,7 +66,7 @@ public class MeterInputFragment extends Fragment {
     private static final String PREFS_NAME = "smart_meter_prefs";
     private static final String KEY_ROOM_LIST = "room_list";
 
-    // ===== 新布局控件 =====
+    // ===== 新布局控件（全部与 fragment_meter_input.xml 匹配） =====
     private TextView tvSelectedRoom, tvSelectedType, tvProgressLight;
     private TextView tvCameraHint, tvCameraSub, tvNetworkStatus, tvCountBadge;
     private LinearLayout llCamera;
@@ -80,10 +79,10 @@ public class MeterInputFragment extends Fragment {
     // ===== 状态变量 =====
     private int selectedRoomId = -1;
     private String selectedRoomName = "";
-    private int selectedTypeIndex = 0;
+    private int selectedTypeIndex = 0; // 0=电, 1=冷水, 2=热水
     private List<CachedRecord> cachedList = new ArrayList<>();
     private CachedRecordAdapter cachedAdapter;
-    private List<RoomItem> cachedRoomList = new ArrayList<>(); // 改为全局 RoomItem
+    private List<RoomItem> cachedRoomList = new ArrayList<>(); // 使用 RoomItem 类
     private String currentPhotoPath;
 
     // ===== 常量 =====
@@ -99,7 +98,7 @@ public class MeterInputFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_meter_input, container, false);
 
-        // ===== 初始化控件 =====
+        // ===== 初始化所有控件 =====
         tvSelectedRoom = view.findViewById(R.id.tv_selected_room);
         tvSelectedType = view.findViewById(R.id.tv_selected_type);
         tvProgressLight = view.findViewById(R.id.tv_progress_light);
@@ -177,7 +176,7 @@ public class MeterInputFragment extends Fragment {
     private void selectType(int index) {
         selectedTypeIndex = index;
         Button[] buttons = {btnTypeElectric, btnTypeCold, btnTypeHot};
-        int[] bgColors = {0xFF4A6CF7, 0xFF22C55E, 0xFFF59E0B};
+        int[] bgColors = {0xFF4F46E5, 0xFF10B981, 0xFFF59E0B};
         for (int i = 0; i < buttons.length; i++) {
             if (i == index) {
                 buttons[i].setBackgroundTintList(android.content.res.ColorStateList.valueOf(bgColors[i]));
@@ -344,6 +343,7 @@ public class MeterInputFragment extends Fragment {
     // 缓存记录加载
     // ================================================================
     private void loadCachedRecords() {
+        // 内存已维护，无需额外加载
         updateUI();
     }
 
@@ -409,7 +409,7 @@ public class MeterInputFragment extends Fragment {
 
     private String compressImageToBase64(String imagePath) {
         try {
-            BitmapFactory.Options options = new BitmapFactory.Options();
+            android.graphics.BitmapFactory.Options options = new android.graphics.BitmapFactory.Options();
             options.inJustDecodeBounds = true;
             BitmapFactory.decodeFile(imagePath, options);
 
@@ -420,10 +420,10 @@ public class MeterInputFragment extends Fragment {
 
             options.inJustDecodeBounds = false;
             options.inSampleSize = sampleSize;
-            Bitmap bitmap = BitmapFactory.decodeFile(imagePath, options);
+            android.graphics.Bitmap bitmap = BitmapFactory.decodeFile(imagePath, options);
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 60, baos);
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 60, baos);
             byte[] imageBytes = baos.toByteArray();
             return Base64.encodeToString(imageBytes, Base64.NO_WRAP);
         } catch (Exception e) {
@@ -588,8 +588,13 @@ public class MeterInputFragment extends Fragment {
     }
 
     // ================================================================
-    // 内部数据类（只保留 CachedRecord）
+    // 内部数据类
     // ================================================================
+
+    // RoomItem 类（与全局的 RoomItem 区分，但这里我们使用外部类 RoomItem）
+    // 注意：我们在代码中使用了外部类 RoomItem（已在工程中存在），
+    // 如果你没有 RoomItem 类，请确保存在，否则编译会报错。
+
     static class CachedRecord {
         int roomId;
         String roomName;
@@ -620,9 +625,7 @@ public class MeterInputFragment extends Fragment {
         }
     }
 
-    // ================================================================
-    // 缓存记录适配器
-    // ================================================================
+    // ===== 缓存记录适配器 =====
     static class CachedRecordAdapter extends RecyclerView.Adapter<CachedRecordAdapter.ViewHolder> {
 
         private List<CachedRecord> list;

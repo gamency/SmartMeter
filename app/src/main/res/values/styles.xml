@@ -3,7 +3,7 @@
     <!-- 基础应用主题 -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">@color/primary_blue</item>
-        <item name="colorPrimaryDark">@color/primary_blue</item>
+        <item name="colorPrimaryDark">@color/primary_blue_dark</item>
         <item name="colorAccent">@color/primary_blue</item>
         <item name="android:windowBackground">@color/bg_page</item>
         <item name="android:statusBarColor">@color/primary_blue</item>
@@ -15,13 +15,13 @@
     <style name="CardStyle">
         <item name="android:background">@drawable/bg_card</item>
         <item name="android:elevation">2dp</item>
-        <item name="android:padding">@dimen/padding_card</item>
-        <item name="cardCornerRadius">@dimen/radius_card</item>
+        <item name="android:padding">16dp</item>
+        <item name="cardCornerRadius">12dp</item>
         <item name="cardPreventCornerOverlap">true</item>
         <item name="cardUseCompatPadding">true</item>
     </style>
 
-    <!-- 主按钮（蓝色填充） -->
+    <!-- 主按钮 -->
     <style name="ButtonPrimary" parent="Widget.AppCompat.Button">
         <item name="android:background">@drawable/bg_button_primary</item>
         <item name="android:textColor">#FFFFFF</item>
@@ -36,7 +36,7 @@
         <item name="android:stateListAnimator">@null</item>
     </style>
 
-    <!-- 次要按钮（白底蓝边） -->
+    <!-- 次要按钮 -->
     <style name="ButtonSecondary">
         <item name="android:background">@drawable/bg_button_secondary</item>
         <item name="android:textColor">@color/primary_blue</item>
@@ -51,25 +51,35 @@
     </style>
 
     <!-- 文字层级 -->
-    <style name="TextLarge">
-        <item name="android:textSize">@dimen/text_large</item>
+    <style name="TextDisplay">
+        <item name="android:textSize">32sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif</item>
     </style>
 
+    <!-- 大标题（之前定义过，但可能被误删） -->
     <style name="TextTitle">
-        <item name="android:textSize">@dimen/text_title</item>
+        <item name="android:textSize">20sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
     <style name="TextBody">
-        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/text_secondary</item>
     </style>
 
     <style name="TextSmall">
-        <item name="android:textSize">@dimen/text_small</item>
+        <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/text_hint</item>
     </style>
+
+    <style name="TextMicro">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/text_hint</item>
+    </style>
+
+    <!-- 兼容旧布局的 TextLarge -->
+    <style name="TextLarge" parent="TextDisplay" />
+
 </resources>

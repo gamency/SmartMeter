@@ -77,7 +77,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
     private LinearLayout llCamera;
     private Button btnTypeElectric, btnTypeCold, btnTypeHot;
     private TextView btnClearAll;
-    private RecyclerView rvCached;
+    private RecyclerView pendingRecyclerView;   // 修改：与布局ID一致
     private TextView tvEmptyCached;
     private Button btnSubmitAll;
 
@@ -129,18 +129,19 @@ public class SmartPhotoActivity extends AppCompatActivity {
         btnTypeCold = findViewById(R.id.btn_type_cold);
         btnTypeHot = findViewById(R.id.btn_type_hot);
         btnClearAll = findViewById(R.id.btn_clear_all);
-        rvCached = findViewById(R.id.rv_cached);
+        // 修正：使用 pendingRecyclerView
+        pendingRecyclerView = findViewById(R.id.pendingRecyclerView);
         tvEmptyCached = findViewById(R.id.tv_empty_cached);
         btnSubmitAll = findViewById(R.id.btn_submit_all);
 
         // ===== 设置 RecyclerView =====
-        rvCached.setLayoutManager(new LinearLayoutManager(this));
+        pendingRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         cachedAdapter = new CachedRecordAdapter(cachedList, record -> {
             cachedList.remove(record);
             cachedAdapter.notifyDataSetChanged();
             updateUI();
         });
-        rvCached.setAdapter(cachedAdapter);
+        pendingRecyclerView.setAdapter(cachedAdapter);
 
         // ===== 加载偏好 =====
         loadPreferences();
@@ -259,10 +260,10 @@ public class SmartPhotoActivity extends AppCompatActivity {
         }
         if (cachedList.isEmpty()) {
             tvEmptyCached.setVisibility(View.VISIBLE);
-            rvCached.setVisibility(View.GONE);
+            pendingRecyclerView.setVisibility(View.GONE);
         } else {
             tvEmptyCached.setVisibility(View.GONE);
-            rvCached.setVisibility(View.VISIBLE);
+            pendingRecyclerView.setVisibility(View.VISIBLE);
         }
     }
 

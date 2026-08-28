@@ -86,7 +86,7 @@ public class OverviewFragment extends Fragment {
         tvEmptyTenant = view.findViewById(R.id.tv_empty_tenant);
 
         // 新增长趋势图
-        lineChartTrend = view.findViewById(R.id.line_chart_trend);
+        //lineChartTrend = view.findViewById(R.id.line_chart_trend);
         tvTrendEmpty = view.findViewById(R.id.tv_trend_empty);
 
         tagMonth = view.findViewById(R.id.tag_month);

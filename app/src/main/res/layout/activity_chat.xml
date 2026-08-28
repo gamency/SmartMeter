@@ -15,28 +15,30 @@
         android:background="#FFFFFF"
         android:fitsSystemWindows="false">
 
-        <!-- 顶部蓝条 -->
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar_chat"
+        <!-- 顶部白色标题栏 -->
+        <LinearLayout
+            android:id="@+id/title_bar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/primary_blue"
-            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            android:layout_height="56dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="#FFFFFF"
             android:elevation="0dp"
-            android:paddingTop="0dp"
-            app:title="">
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
 
-            <!-- 菜单按钮 -->
+            <!-- 菜单按钮（蓝色） -->
             <ImageView
                 android:id="@+id/btn_menu"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:padding="10dp"
+                android:padding="8dp"
                 android:src="@drawable/ic_menu_white"
+                android:tint="@color/primary_blue"
                 android:background="?attr/selectableItemBackground"
                 android:contentDescription="打开侧边栏" />
 
-            <!-- 会话标题 -->
+            <!-- 会话标题（深色） -->
             <TextView
                 android:id="@+id/tv_session_title"
                 android:layout_width="0dp"
@@ -44,9 +46,9 @@
                 android:layout_weight="1"
                 android:text="新对话"
                 android:textSize="17sp"
-                android:textColor="#FFFFFF"
-                android:textStyle="normal"
-                android:paddingStart="4dp"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold"
+                android:paddingStart="8dp"
                 android:singleLine="true"
                 android:ellipsize="end"
                 android:clickable="true"
@@ -60,12 +62,18 @@
                 android:layout_height="wrap_content"
                 android:text=""
                 android:textSize="13sp"
-                android:textColor="#FFD700"
+                android:textColor="@color/warning_orange"
                 android:fontFamily="monospace"
                 android:padding="4dp"
                 android:visibility="gone" />
 
-        </androidx.appcompat.widget.Toolbar>
+        </LinearLayout>
+
+        <!-- 灰色分割线 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider" />
 
         <!-- 消息列表 -->
         <androidx.recyclerview.widget.RecyclerView
@@ -131,7 +139,7 @@
         android:elevation="0dp"
         android:fitsSystemWindows="true">
 
-        <!-- 侧边栏头部 -->
+        <!-- 侧边栏头部（保留蓝色） -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

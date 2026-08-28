@@ -4,15 +4,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F7FA">
+    android:background="#F8FAFC">
 
-    <!-- 极简状态栏 -->
+    <!-- 顶部白色标题栏 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:background="@color/primary_blue"
+        android:background="#FFFFFF"
         android:paddingStart="16dp"
         android:paddingEnd="16dp">
 
@@ -21,7 +21,7 @@
             android:layout_height="wrap_content"
             android:text="📷 智能抄表"
             android:textSize="17sp"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/text_primary"
             android:textStyle="bold" />
 
         <View
@@ -35,10 +35,15 @@
             android:layout_height="wrap_content"
             android:text="0 / 0"
             android:textSize="13sp"
-            android:textColor="#FFFFFF"
-            android:alpha="0.8" />
+            android:textColor="@color/text_hint" />
 
     </LinearLayout>
+
+    <!-- 灰色分割线 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider" />
 
     <!-- ===== 主体内容 ===== -->
     <ScrollView
@@ -54,14 +59,15 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- 1. 当前选择卡片 -->
+            <!-- 当前选择卡片 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:background="@drawable/bg_card_rounded"
+                android:background="#FFFFFF"
                 android:padding="14dp"
+                android:radius="12dp"
                 android:elevation="2dp"
                 android:layout_marginBottom="12dp">
 
@@ -70,7 +76,7 @@
                     android:layout_height="wrap_content"
                     android:text="房间"
                     android:textSize="12sp"
-                    android:textColor="#9CA3AF" />
+                    android:textColor="@color/text_hint" />
 
                 <TextView
                     android:id="@+id/tv_selected_room"
@@ -79,7 +85,7 @@
                     android:text="请选择"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    android:textColor="#1A1A2E"
+                    android:textColor="@color/text_primary"
                     android:layout_marginStart="8dp"
                     android:layout_marginEnd="16dp"
                     android:drawableEnd="@drawable/ic_chevron_down"
@@ -88,7 +94,7 @@
                 <View
                     android:layout_width="1dp"
                     android:layout_height="24dp"
-                    android:background="#E5E7EB"
+                    android:background="@color/divider"
                     android:layout_marginEnd="12dp" />
 
                 <TextView
@@ -96,7 +102,7 @@
                     android:layout_height="wrap_content"
                     android:text="表型"
                     android:textSize="12sp"
-                    android:textColor="#9CA3AF" />
+                    android:textColor="@color/text_hint" />
 
                 <TextView
                     android:id="@+id/tv_selected_type"
@@ -104,20 +110,21 @@
                     android:layout_height="wrap_content"
                     android:text="⚡电表"
                     android:textSize="16sp"
-                    android:textColor="#4A6CF7"
+                    android:textColor="@color/primary_blue"
                     android:textStyle="bold"
                     android:layout_marginStart="8dp" />
 
             </LinearLayout>
 
-            <!-- 2. 拍照核心区 -->
+            <!-- 拍照核心区 -->
             <LinearLayout
                 android:id="@+id/ll_camera"
                 android:layout_width="match_parent"
                 android:layout_height="180dp"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:background="@drawable/bg_card_rounded"
+                android:background="#FFFFFF"
+                android:radius="12dp"
                 android:elevation="2dp"
                 android:layout_marginBottom="12dp"
                 android:clickable="true"
@@ -129,7 +136,7 @@
                     android:layout_width="64dp"
                     android:layout_height="64dp"
                     android:src="@drawable/ic_camera_large"
-                    android:tint="#9CA3AF" />
+                    android:tint="@color/text_hint" />
 
                 <TextView
                     android:id="@+id/tv_camera_hint"
@@ -137,7 +144,7 @@
                     android:layout_height="wrap_content"
                     android:text="点击拍照"
                     android:textSize="16sp"
-                    android:textColor="#9CA3AF"
+                    android:textColor="@color/text_hint"
                     android:layout_marginTop="8dp" />
 
                 <TextView
@@ -146,19 +153,20 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textSize="12sp"
-                    android:textColor="#D1D5DB"
+                    android:textColor="@color/text_hint"
                     android:layout_marginTop="4dp" />
 
             </LinearLayout>
 
-            <!-- 3. 表型快捷切换 -->
+            <!-- 表型快捷切换 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center"
-                android:background="@drawable/bg_card_rounded"
+                android:background="#FFFFFF"
                 android:padding="12dp"
+                android:radius="12dp"
                 android:elevation="2dp"
                 android:layout_marginBottom="16dp">
 
@@ -167,7 +175,7 @@
                     android:layout_height="wrap_content"
                     android:text="表型："
                     android:textSize="13sp"
-                    android:textColor="#9CA3AF"
+                    android:textColor="@color/text_hint"
                     android:layout_marginEnd="16dp" />
 
                 <Button
@@ -176,8 +184,8 @@
                     android:layout_height="48dp"
                     android:text="⚡"
                     android:textSize="20sp"
-                    android:backgroundTint="#4A6CF7"
-                    app:cornerRadius="24dp"
+                    android:backgroundTint="@color/primary_blue"
+                    android:radius="24dp"
                     android:padding="0dp" />
 
                 <Button
@@ -187,7 +195,7 @@
                     android:text="💧"
                     android:textSize="20sp"
                     android:backgroundTint="#E5E7EB"
-                    app:cornerRadius="24dp"
+                    android:radius="24dp"
                     android:padding="0dp"
                     android:layout_marginStart="12dp" />
 
@@ -198,13 +206,13 @@
                     android:text="🔥"
                     android:textSize="20sp"
                     android:backgroundTint="#E5E7EB"
-                    app:cornerRadius="24dp"
+                    android:radius="24dp"
                     android:padding="0dp"
                     android:layout_marginStart="12dp" />
 
             </LinearLayout>
 
-            <!-- 4. 已拍记录标题 -->
+            <!-- 已拍记录标题 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -218,7 +226,7 @@
                     android:text="📋 已拍记录"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textColor="#1A1A2E" />
+                    android:textColor="@color/text_primary" />
 
                 <TextView
                     android:id="@+id/tv_count_badge"
@@ -232,7 +240,7 @@
                     android:paddingEnd="8dp"
                     android:paddingTop="2dp"
                     android:paddingBottom="2dp"
-                    app:cornerRadius="10dp"
+                    android:radius="10dp"
                     android:layout_marginStart="8dp" />
 
                 <View
@@ -252,7 +260,7 @@
 
             </LinearLayout>
 
-            <!-- 5. 缓存记录列表 -->
+            <!-- 缓存记录列表 -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_cached"
                 android:layout_width="match_parent"
@@ -266,13 +274,12 @@
                 android:layout_height="wrap_content"
                 android:text="暂无缓存数据\n点击上方拍照按钮开始抄表"
                 android:textSize="13sp"
-                android:textColor="#9CA3AF"
+                android:textColor="@color/text_hint"
                 android:gravity="center"
                 android:paddingVertical="32dp"
                 android:visibility="gone"
                 android:lineSpacingExtra="6dp" />
 
-            <!-- 底部占位 -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="16dp" />
@@ -281,7 +288,7 @@
 
     </ScrollView>
 
-    <!-- ===== 底部固定按钮 ===== -->
+    <!-- 底部固定按钮 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -299,7 +306,7 @@
             android:layout_height="wrap_content"
             android:text="📶 在线"
             android:textSize="12sp"
-            android:textColor="#22C55E"
+            android:textColor="@color/success_green"
             android:gravity="center_vertical"
             android:layout_marginEnd="12dp" />
 
@@ -319,7 +326,7 @@
             android:enabled="false"
             android:paddingStart="20dp"
             android:paddingEnd="20dp"
-            app:cornerRadius="8dp" />
+            android:radius="8dp" />
 
     </LinearLayout>
 
