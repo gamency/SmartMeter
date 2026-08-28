@@ -6,7 +6,7 @@
     android:orientation="vertical"
     android:background="@color/bg_page">
 
-    <!-- ===== 顶部白色时间栏 ===== -->
+    <!-- 顶部白色时间栏 -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -169,7 +169,6 @@
                         style="@style/TextTitle"
                         android:layout_marginBottom="@dimen/space_small" />
 
-                    <!-- 总用电量：TextDisplay 样式 -->
                     <TextView
                         android:id="@+id/tv_total_usage"
                         style="@style/TextDisplay"
@@ -186,7 +185,6 @@
                         android:orientation="horizontal"
                         android:weightSum="2">
 
-                        <!-- 左：租户承担 -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -215,7 +213,6 @@
                                 style="@style/TextSmall" />
                         </LinearLayout>
 
-                        <!-- 右：房东承担 -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -360,7 +357,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 style="@style/CardStyle"
-                android:layout_marginBottom="80dp">
+                android:layout_marginBottom="@dimen/space_card_vertical">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -413,47 +410,47 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- 5. 近30天日总用电趋势 -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                style="@style/CardStyle"
-                android:layout_marginBottom="@dimen/space_card_vertical">
+            <!-- 5. 近30天日总用电趋势（柱状图） -->
+<!-- 近30天日总用电趋势（折线图） -->
+<androidx.cardview.widget.CardView
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    style="@style/CardStyle"
+    android:layout_marginBottom="@dimen/space_card_vertical">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="近30天整栋日总用电"
-                        style="@style/TextTitle"
-                        android:layout_marginBottom="@dimen/space_small" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="近30天整栋日总用电"
+            style="@style/TextTitle"
+            android:layout_marginBottom="@dimen/space_small" />
 
-                    <LinearLayout
-                        android:id="@+id/trend_container"
-                        android:layout_width="match_parent"
-                        android:layout_height="120dp"
-                        android:orientation="horizontal"
-                        android:gravity="bottom"
-                        android:paddingTop="8dp"
-                        android:clipChildren="false" />
+        <!-- ===== 折线图 ===== -->
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/line_chart_trend"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginTop="8dp"
+            android:visibility="gone" />
 
-                    <TextView
-                        android:id="@+id/tv_trend_empty"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="暂无数据"
-                        style="@style/TextSmall"
-                        android:gravity="center"
-                        android:paddingVertical="16dp"
-                        android:visibility="gone" />
+        <TextView
+            android:id="@+id/tv_trend_empty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="暂无数据"
+            style="@style/TextSmall"
+            android:gravity="center"
+            android:paddingVertical="16dp"
+            android:visibility="gone" />
 
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
 
         </LinearLayout>
     </ScrollView>

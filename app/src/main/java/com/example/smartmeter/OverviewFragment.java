@@ -2,6 +2,7 @@ package com.example.smartmeter;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -51,9 +52,9 @@ public class OverviewFragment extends Fragment {
     private LinearLayout distributionContainer;
     private TextView tvEmptyTenant;
 
-    // 新增大楼趋势折线图
+    // 趋势折线图
     private LineChart lineChartTrend;
-    private TextView tvTrendEmpty; // 保留备用
+    private TextView tvTrendEmpty;
 
     // 日期标签
     private TextView tagMonth, tagLastMonth, tag30d, tag90d;
@@ -85,8 +86,8 @@ public class OverviewFragment extends Fragment {
         distributionContainer = view.findViewById(R.id.distribution_container);
         tvEmptyTenant = view.findViewById(R.id.tv_empty_tenant);
 
-        // 新增长趋势图
-        //lineChartTrend = view.findViewById(R.id.line_chart_trend);
+        // 趋势折线图
+        lineChartTrend = view.findViewById(R.id.line_chart_trend);
         tvTrendEmpty = view.findViewById(R.id.tv_trend_empty);
 
         tagMonth = view.findViewById(R.id.tag_month);
@@ -125,7 +126,6 @@ public class OverviewFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // 回到前台时自动刷新
         refreshAllData();
     }
 
@@ -147,7 +147,6 @@ public class OverviewFragment extends Fragment {
                                 periodStart = start;
                                 periodEnd = end;
                                 tvPeriod.setText(periodStart + " ~ " + periodEnd);
-                                // 取消所有标签的选中状态
                                 TextView[] tags = {tagMonth, tagLastMonth, tag30d, tag90d};
                                 for (TextView tag : tags) {
                                     tag.setSelected(false);
@@ -457,7 +456,6 @@ public class OverviewFragment extends Fragment {
         for (int i = 0; i < items.size(); i++) {
             TrendItem item = items.get(i);
             entries.add(new Entry(i, (float) item.value));
-            // 格式化日期显示（如 "07-01"）
             String[] parts = item.date.split("-");
             if (parts.length == 3) {
                 labels.add(parts[1] + "-" + parts[2]);
