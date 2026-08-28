@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -18,6 +19,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,9 +28,12 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -53,7 +58,7 @@ import okhttp3.Response;
 public class MeterInputFragment extends Fragment {
 
     private static final String TAG = "MeterInput";
-    private static final String BASE_URL = "http://192.168.10.12:5000";
+    private static final String BASE_URL = Config.BASE_URL;
     private static final int REQUEST_CAMERA = 100;
     private static final int REQUEST_PERMISSION = 101;
     private static final String PHOTO_FILE_PROVIDER = "com.example.smartmeter.fileprovider";
@@ -62,77 +67,210 @@ public class MeterInputFragment extends Fragment {
     private static final String PREFS_NAME = "smart_meter_prefs";
     private static final String KEY_ROOM_LIST = "room_list";
 
-    private TextView tvSelectedRoom, tvPhotoHint, tvNetworkHint;
-    private Button btnTakePhoto, btnSubmitAll;
+    // ===== 新布局控件 =====
+    private TextView tvSelectedRoom, tvSelectedType, tvProgressLight;
+    private TextView tvCameraHint, tvCameraSub, tvNetworkStatus, tvCountBadge;
+    private LinearLayout llCamera;
+    private Button btnTypeElectric, btnTypeCold, btnTypeHot;
+    private TextView btnClearAll;
     private RecyclerView rvCached;
     private TextView tvEmptyCached;
-    private TextView btnCached;
+    private Button btnSubmitAll;
 
+    // ===== 状态变量 =====
     private int selectedRoomId = -1;
     private String selectedRoomName = "";
+    private int selectedTypeIndex = 0;
     private List<CachedRecord> cachedList = new ArrayList<>();
     private CachedRecordAdapter cachedAdapter;
+    private List<RoomItem> cachedRoomList = new ArrayList<>(); // 改为全局 RoomItem
     private String currentPhotoPath;
 
-    // 缓存房间列表（内存）
-    private List<RoomItem> cachedRoomList = new ArrayList<>();
+    // ===== 常量 =====
+    private static final String[] TYPE_LABELS = {"⚡电表", "💧冷水", "🔥热水"};
+    private static final String[] TYPE_VALUES = {"electric", "cold_water", "hot_water"};
 
+    // ================================================================
+    // 生命周期
+    // ================================================================
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_meter_input, container, false);
 
+        // ===== 初始化控件 =====
         tvSelectedRoom = view.findViewById(R.id.tv_selected_room);
-        tvPhotoHint = view.findViewById(R.id.tv_photo_hint);
-        tvNetworkHint = view.findViewById(R.id.tv_network_hint);
-        btnTakePhoto = view.findViewById(R.id.btn_take_photo);
-        btnSubmitAll = view.findViewById(R.id.btn_submit_all);
+        tvSelectedType = view.findViewById(R.id.tv_selected_type);
+        tvProgressLight = view.findViewById(R.id.tv_progress_light);
+        tvCameraHint = view.findViewById(R.id.tv_camera_hint);
+        tvCameraSub = view.findViewById(R.id.tv_camera_sub);
+        tvNetworkStatus = view.findViewById(R.id.tv_network_status);
+        tvCountBadge = view.findViewById(R.id.tv_count_badge);
+        llCamera = view.findViewById(R.id.ll_camera);
+        btnTypeElectric = view.findViewById(R.id.btn_type_electric);
+        btnTypeCold = view.findViewById(R.id.btn_type_cold);
+        btnTypeHot = view.findViewById(R.id.btn_type_hot);
+        btnClearAll = view.findViewById(R.id.btn_clear_all);
         rvCached = view.findViewById(R.id.rv_cached);
         tvEmptyCached = view.findViewById(R.id.tv_empty_cached);
-        btnCached = view.findViewById(R.id.btn_cached);
+        btnSubmitAll = view.findViewById(R.id.btn_submit_all);
 
+        // ===== 设置 RecyclerView =====
         rvCached.setLayoutManager(new LinearLayoutManager(getContext()));
-
         cachedAdapter = new CachedRecordAdapter(cachedList, record -> {
             cachedList.remove(record);
             cachedAdapter.notifyDataSetChanged();
-            if (cachedList.isEmpty()) {
-                tvEmptyCached.setVisibility(View.VISIBLE);
-                rvCached.setVisibility(View.GONE);
-            }
+            updateUI();
             checkNetworkStatus();
         });
         rvCached.setAdapter(cachedAdapter);
 
-        // 先加载本地缓存
-        loadRoomListFromCache();
-
-        // 然后尝试从网络更新（异步）
-        loadRoomList();
-
-        loadCachedRecords();
-
+        // ===== 点击事件 =====
         tvSelectedRoom.setOnClickListener(v -> showRoomSelectorDialog());
-        btnTakePhoto.setOnClickListener(v -> checkPermissionAndTakePhoto());
+        llCamera.setOnClickListener(v -> checkPermissionAndTakePhoto());
+
+        btnTypeElectric.setOnClickListener(v -> selectType(0));
+        btnTypeCold.setOnClickListener(v -> selectType(1));
+        btnTypeHot.setOnClickListener(v -> selectType(2));
+
         btnSubmitAll.setOnClickListener(v -> submitAllCached());
 
-        btnCached.setOnClickListener(v -> {
-            rvCached.smoothScrollToPosition(0);
+        btnClearAll.setOnClickListener(v -> {
+            if (!cachedList.isEmpty()) {
+                new AlertDialog.Builder(getContext())
+                        .setTitle("确认清空")
+                        .setMessage("确定要删除所有缓存记录吗？")
+                        .setPositiveButton("清空", (d, w) -> {
+                            cachedList.clear();
+                            cachedAdapter.notifyDataSetChanged();
+                            updateUI();
+                            checkNetworkStatus();
+                            Toast.makeText(getContext(), "已清空所有缓存", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("取消", null)
+                        .show();
+            }
         });
 
+        // ===== 加载数据 =====
+        loadRoomListFromCache();
+        loadRoomListFromNetwork();
+        loadCachedRecords();
+        updateUI();
         checkNetworkStatus();
 
         return view;
     }
 
-    // ===== 加载房间列表（优先缓存，网络更新） =====
-    private void loadRoomList() {
+    @Override
+    public void onResume() {
+        super.onResume();
+        loadCachedRecords();
+        updateUI();
+        checkNetworkStatus();
+    }
+
+    // ================================================================
+    // 表型选择
+    // ================================================================
+    private void selectType(int index) {
+        selectedTypeIndex = index;
+        Button[] buttons = {btnTypeElectric, btnTypeCold, btnTypeHot};
+        int[] bgColors = {0xFF4A6CF7, 0xFF22C55E, 0xFFF59E0B};
+        for (int i = 0; i < buttons.length; i++) {
+            if (i == index) {
+                buttons[i].setBackgroundTintList(android.content.res.ColorStateList.valueOf(bgColors[i]));
+                buttons[i].setTextColor(Color.WHITE);
+            } else {
+                buttons[i].setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFE5E7EB));
+                buttons[i].setTextColor(0xFF9CA3AF);
+            }
+        }
+        tvSelectedType.setText(TYPE_LABELS[index]);
+    }
+
+    // ================================================================
+    // UI 更新
+    // ================================================================
+    private void updateUI() {
+        int count = cachedList.size();
+        tvCountBadge.setText(String.valueOf(count));
+        tvProgressLight.setText("已拍 " + count);
+
+        if (count > 0) {
+            btnSubmitAll.setEnabled(true);
+            btnSubmitAll.setText("同步 " + count + " 条");
+            btnClearAll.setVisibility(View.VISIBLE);
+            tvCameraSub.setText("已拍 " + count + " 张，点击同步上传");
+        } else {
+            btnSubmitAll.setEnabled(false);
+            btnSubmitAll.setText("同步 0 条");
+            btnClearAll.setVisibility(View.GONE);
+            tvCameraSub.setText("");
+        }
+        if (cachedList.isEmpty()) {
+            tvEmptyCached.setVisibility(View.VISIBLE);
+            rvCached.setVisibility(View.GONE);
+        } else {
+            tvEmptyCached.setVisibility(View.GONE);
+            rvCached.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void checkNetworkStatus() {
+        tvNetworkStatus.setText("📶 在线");
+        tvNetworkStatus.setTextColor(ResourcesCompat.getColor(getResources(), R.color.success_green, null));
+    }
+
+    // ================================================================
+    // 房间列表（缓存 + 网络）
+    // ================================================================
+    private void loadRoomListFromCache() {
+        if (getActivity() == null) return;
+        SharedPreferences prefs = getActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String jsonData = prefs.getString(KEY_ROOM_LIST, null);
+        if (jsonData != null) {
+            try {
+                JSONArray jsonArray = new JSONArray(jsonData);
+                List<RoomItem> rooms = new ArrayList<>();
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject obj = jsonArray.getJSONObject(i);
+                    rooms.add(new RoomItem(
+                            obj.getInt("id"),
+                            obj.getString("name"),
+                            obj.getInt("floor"),
+                            obj.getString("room_type"),
+                            0,
+                            0.0
+                    ));
+                }
+                cachedRoomList = rooms;
+                if (!rooms.isEmpty()) {
+                    selectedRoomId = rooms.get(0).getId();
+                    selectedRoomName = rooms.get(0).getName();
+                    tvSelectedRoom.setText(selectedRoomName);
+                    llCamera.setEnabled(true);
+                    tvCameraHint.setText("点击拍照");
+                } else {
+                    tvSelectedRoom.setText("暂无房间");
+                    llCamera.setEnabled(false);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "解析缓存房间列表失败", e);
+            }
+        } else {
+            tvSelectedRoom.setText("加载中...");
+            llCamera.setEnabled(false);
+        }
+    }
+
+    private void loadRoomListFromNetwork() {
         new Thread(() -> {
             try {
                 OkHttpClient client = new OkHttpClient.Builder()
-                        .connectTimeout(3, TimeUnit.SECONDS)
-                        .readTimeout(3, TimeUnit.SECONDS)
+                        .connectTimeout(5, TimeUnit.SECONDS)
+                        .readTimeout(5, TimeUnit.SECONDS)
                         .build();
                 Request request = new Request.Builder()
                         .url(BASE_URL + "/api/smart/rooms")
@@ -141,97 +279,77 @@ public class MeterInputFragment extends Fragment {
                 Response response = client.newCall(request).execute();
                 if (response.isSuccessful()) {
                     String jsonData = response.body().string();
-                    // 更新缓存
-                    saveRoomListToCache(jsonData);
-                    // 解析并更新UI
-                    parseAndSetRooms(jsonData);
+                    if (getActivity() != null) {
+                        getActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                                .edit().putString(KEY_ROOM_LIST, jsonData).apply();
+                        JSONArray jsonArray = new JSONArray(jsonData);
+                        List<RoomItem> rooms = new ArrayList<>();
+                        for (int i = 0; i < jsonArray.length(); i++) {
+                            JSONObject obj = jsonArray.getJSONObject(i);
+                            rooms.add(new RoomItem(
+                                    obj.getInt("id"),
+                                    obj.getString("name"),
+                                    obj.getInt("floor"),
+                                    obj.getString("room_type"),
+                                    0,
+                                    0.0
+                            ));
+                        }
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                cachedRoomList = rooms;
+                                if (!rooms.isEmpty()) {
+                                    selectedRoomId = rooms.get(0).getId();
+                                    selectedRoomName = rooms.get(0).getName();
+                                    tvSelectedRoom.setText(selectedRoomName);
+                                    llCamera.setEnabled(true);
+                                    tvCameraHint.setText("点击拍照");
+                                }
+                            });
+                        }
+                    }
                 }
-                // 网络失败不影响，因为已经有缓存了
             } catch (Exception e) {
                 Log.w(TAG, "网络获取房间列表失败，使用缓存");
             }
         }).start();
     }
 
-    private void saveRoomListToCache(String jsonData) {
-        if (getActivity() == null) return;
-        SharedPreferences prefs = getActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        prefs.edit().putString(KEY_ROOM_LIST, jsonData).apply();
-    }
-
-    private void loadRoomListFromCache() {
-        if (getActivity() == null) return;
-        SharedPreferences prefs = getActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String jsonData = prefs.getString(KEY_ROOM_LIST, null);
-        if (jsonData != null) {
-            parseAndSetRooms(jsonData);
-        } else {
-            // 无缓存，显示等待
-            getActivity().runOnUiThread(() -> {
-                tvSelectedRoom.setText("请联网加载房间");
-                btnTakePhoto.setEnabled(false);
-            });
-        }
-    }
-
-    private void parseAndSetRooms(String jsonData) {
-        try {
-            JSONArray jsonArray = new JSONArray(jsonData);
-            List<RoomItem> rooms = new ArrayList<>();
-            for (int i = 0; i < jsonArray.length(); i++) {
-                JSONObject obj = jsonArray.getJSONObject(i);
-                rooms.add(new RoomItem(
-                        obj.getInt("id"),
-                        obj.getString("name"),
-                        obj.getInt("floor"),
-                        obj.getString("room_type")
-                ));
-            }
-            if (getActivity() == null) return;
-            getActivity().runOnUiThread(() -> {
-                cachedRoomList = rooms;
-                if (!rooms.isEmpty()) {
-                    selectedRoomId = rooms.get(0).id;
-                    selectedRoomName = rooms.get(0).name;
-                    tvSelectedRoom.setText(selectedRoomName);
-                    btnTakePhoto.setEnabled(true);
-                    tvPhotoHint.setText("点击拍照按钮拍摄电表");
-                } else {
-                    tvSelectedRoom.setText("暂无房间");
-                    btnTakePhoto.setEnabled(false);
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    // ===== 房间选择对话框（使用缓存列表） =====
+    // ================================================================
+    // 房间选择对话框（BottomSheet）
+    // ================================================================
     private void showRoomSelectorDialog() {
         if (cachedRoomList.isEmpty()) {
             Toast.makeText(getContext(), "无房间列表，请连接网络加载", Toast.LENGTH_SHORT).show();
             return;
         }
-        String[] roomNames = new String[cachedRoomList.size()];
-        int[] roomIds = new int[cachedRoomList.size()];
-        for (int i = 0; i < cachedRoomList.size(); i++) {
-            roomNames[i] = cachedRoomList.get(i).name;
-            roomIds[i] = cachedRoomList.get(i).id;
-        }
-        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setTitle("选择房间");
-        builder.setItems(roomNames, (dialog, which) -> {
-            selectedRoomId = roomIds[which];
-            selectedRoomName = roomNames[which];
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View sheetView = getLayoutInflater().inflate(R.layout.dialog_room_selector, null);
+        RecyclerView recyclerView = sheetView.findViewById(R.id.rv_rooms);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        RoomSelectorAdapter adapter = new RoomSelectorAdapter(cachedRoomList, room -> {
+            selectedRoomId = room.getId();
+            selectedRoomName = room.getName();
             tvSelectedRoom.setText(selectedRoomName);
-            btnTakePhoto.setEnabled(true);
-            tvPhotoHint.setText("点击拍照按钮拍摄电表");
+            dialog.dismiss();
         });
-        builder.setNegativeButton("取消", null);
-        builder.show();
+        recyclerView.setAdapter(adapter);
+
+        dialog.setContentView(sheetView);
+        dialog.show();
     }
 
-    // ===== 拍照权限检查 =====
+    // ================================================================
+    // 缓存记录加载
+    // ================================================================
+    private void loadCachedRecords() {
+        updateUI();
+    }
+
+    // ================================================================
+    // 拍照相关
+    // ================================================================
     private void checkPermissionAndTakePhoto() {
         if (selectedRoomId == -1) {
             Toast.makeText(getContext(), "请先选择房间", Toast.LENGTH_SHORT).show();
@@ -324,8 +442,6 @@ public class MeterInputFragment extends Fragment {
                 return;
             }
 
-            Log.d(TAG, "图片Base64长度: " + base64Image.length());
-
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA);
             SimpleDateFormat timeSdf = new SimpleDateFormat("HH:mm", Locale.CHINA);
             Date now = new Date();
@@ -341,6 +457,8 @@ public class MeterInputFragment extends Fragment {
             else if (hour >= 19 && hour < 22) { pointId = 6; timeLabel = "晚上"; }
             else { pointId = 7; timeLabel = "深夜"; }
 
+            String resourceType = TYPE_VALUES[selectedTypeIndex];
+
             CachedRecord record = new CachedRecord(
                     selectedRoomId,
                     selectedRoomName,
@@ -351,14 +469,14 @@ public class MeterInputFragment extends Fragment {
                     base64Image,
                     null,
                     false,
-                    "pending"
+                    "pending",
+                    resourceType
             );
             cachedList.add(0, record);
             cachedAdapter.notifyDataSetChanged();
-            tvEmptyCached.setVisibility(View.GONE);
-            rvCached.setVisibility(View.VISIBLE);
-            Toast.makeText(getContext(), "📸 拍照已缓存，点击批量提交上传", Toast.LENGTH_SHORT).show();
+            updateUI();
             checkNetworkStatus();
+            Toast.makeText(getContext(), "📸 已保存 (" + TYPE_LABELS[selectedTypeIndex] + ")", Toast.LENGTH_SHORT).show();
 
             if (currentPhotoPath != null) {
                 new File(currentPhotoPath).delete();
@@ -366,29 +484,9 @@ public class MeterInputFragment extends Fragment {
         }
     }
 
-    private void loadCachedRecords() {
-        if (cachedList.isEmpty()) {
-            tvEmptyCached.setVisibility(View.VISIBLE);
-            rvCached.setVisibility(View.GONE);
-        } else {
-            tvEmptyCached.setVisibility(View.GONE);
-            rvCached.setVisibility(View.VISIBLE);
-        }
-    }
-
-    private void checkNetworkStatus() {
-        if (!cachedList.isEmpty()) {
-            btnSubmitAll.setEnabled(true);
-            btnSubmitAll.setText("📤 批量提交全部缓存数据 (" + cachedList.size() + " 条)");
-            tvNetworkHint.setVisibility(View.GONE);
-        } else {
-            btnSubmitAll.setEnabled(false);
-            btnSubmitAll.setText("📤 批量提交全部缓存数据");
-            tvNetworkHint.setVisibility(View.GONE);
-        }
-    }
-
-    // ===== 核心：提交到后端 =====
+    // ================================================================
+    // 批量提交
+    // ================================================================
     private void submitAllCached() {
         if (cachedList.isEmpty()) {
             Toast.makeText(getContext(), "没有待提交数据", Toast.LENGTH_SHORT).show();
@@ -398,15 +496,6 @@ public class MeterInputFragment extends Fragment {
         final List<CachedRecord> toSubmit = new ArrayList<>(cachedList);
         final int totalCount = toSubmit.size();
 
-        // 检查是否有图片数据
-        for (CachedRecord rec : toSubmit) {
-            if (rec.photoBase64 == null || rec.photoBase64.isEmpty()) {
-                Toast.makeText(getContext(), "记录 " + rec.roomName + " 缺少图片，请重新拍照", Toast.LENGTH_SHORT).show();
-                return;
-            }
-        }
-
-        // 构建请求体
         JSONArray recordsArray = new JSONArray();
         for (CachedRecord record : toSubmit) {
             try {
@@ -417,6 +506,7 @@ public class MeterInputFragment extends Fragment {
                 obj.put("read_time", record.readTime);
                 obj.put("point_id", record.pointId);
                 obj.put("time_label", record.timeLabel);
+                obj.put("resource_type", record.resourceType != null ? record.resourceType : "electric");
                 obj.put("photo_base64", "data:image/jpeg;base64," + record.photoBase64);
                 obj.put("manual_reading", JSONObject.NULL);
                 obj.put("status", "pending_ocr");
@@ -424,16 +514,6 @@ public class MeterInputFragment extends Fragment {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
-
-        try {
-            JSONObject requestBody = new JSONObject();
-            requestBody.put("records", recordsArray);
-            String jsonStr = requestBody.toString();
-            Log.d(TAG, "===== 请求体大小: " + jsonStr.length() + " 字节 =====");
-            Log.d(TAG, "请求体预览: " + jsonStr.substring(0, Math.min(500, jsonStr.length())) + "...");
-        } catch (Exception e) {
-            e.printStackTrace();
         }
 
         btnSubmitAll.setEnabled(false);
@@ -460,13 +540,8 @@ public class MeterInputFragment extends Fragment {
                         .post(body)
                         .build();
 
-                Log.d(TAG, "===== 请求URL: " + BASE_URL + "/api/smart/batch_upload =====");
-
                 Response response = client.newCall(request).execute();
                 String responseBody = response.body() != null ? response.body().string() : "空响应";
-
-                Log.d(TAG, "===== 响应状态码: " + response.code() + " =====");
-                Log.d(TAG, "===== 响应内容: " + responseBody + " =====");
 
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
@@ -481,54 +556,40 @@ public class MeterInputFragment extends Fragment {
                                         "✅ " + msg + "\n批次: " + batchId.substring(0, 8) + "...",
                                         Toast.LENGTH_LONG).show();
 
-                                // 清空缓存
                                 cachedList.clear();
                                 cachedAdapter.notifyDataSetChanged();
-                                tvEmptyCached.setVisibility(View.VISIBLE);
-                                rvCached.setVisibility(View.GONE);
+                                updateUI();
                                 checkNetworkStatus();
 
                             } catch (Exception e) {
                                 Toast.makeText(getContext(), "解析响应失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                                 btnSubmitAll.setEnabled(true);
-                                btnSubmitAll.setText("📤 批量提交全部缓存数据 (" + cachedList.size() + " 条)");
+                                btnSubmitAll.setText("同步 " + cachedList.size() + " 条");
                             }
                         } else {
                             Toast.makeText(getContext(), "❌ 提交失败: HTTP " + response.code() + "\n" + responseBody,
                                     Toast.LENGTH_LONG).show();
                             btnSubmitAll.setEnabled(true);
-                            btnSubmitAll.setText("📤 批量提交全部缓存数据 (" + cachedList.size() + " 条)");
+                            btnSubmitAll.setText("同步 " + cachedList.size() + " 条");
                         }
                     });
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                Log.e(TAG, "提交异常: " + e.getMessage());
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
                         Toast.makeText(getContext(), "❌ 提交异常: " + e.getMessage(), Toast.LENGTH_LONG).show();
                         btnSubmitAll.setEnabled(true);
-                        btnSubmitAll.setText("📤 批量提交全部缓存数据 (" + cachedList.size() + " 条)");
+                        btnSubmitAll.setText("同步 " + cachedList.size() + " 条");
                     });
                 }
             }
         }).start();
     }
 
-    // ===== 内部类 =====
-    static class RoomItem {
-        int id;
-        String name;
-        int floor;
-        String type;
-        RoomItem(int id, String name, int floor, String type) {
-            this.id = id;
-            this.name = name;
-            this.floor = floor;
-            this.type = type;
-        }
-    }
-
+    // ================================================================
+    // 内部数据类（只保留 CachedRecord）
+    // ================================================================
     static class CachedRecord {
         int roomId;
         String roomName;
@@ -540,10 +601,11 @@ public class MeterInputFragment extends Fragment {
         String manualReading;
         boolean synced;
         String status;
+        String resourceType;
 
         CachedRecord(int roomId, String roomName, String readDate, String readTime,
                      int pointId, String timeLabel, String photoBase64,
-                     String manualReading, boolean synced, String status) {
+                     String manualReading, boolean synced, String status, String resourceType) {
             this.roomId = roomId;
             this.roomName = roomName;
             this.readDate = readDate;
@@ -554,10 +616,13 @@ public class MeterInputFragment extends Fragment {
             this.manualReading = manualReading;
             this.synced = synced;
             this.status = status;
+            this.resourceType = resourceType;
         }
     }
 
-    // ===== 缓存记录适配器 =====
+    // ================================================================
+    // 缓存记录适配器
+    // ================================================================
     static class CachedRecordAdapter extends RecyclerView.Adapter<CachedRecordAdapter.ViewHolder> {
 
         private List<CachedRecord> list;
@@ -584,7 +649,11 @@ public class MeterInputFragment extends Fragment {
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             CachedRecord item = list.get(position);
             holder.tvRoom.setText(item.roomName);
-            holder.tvReading.setText("待识别");
+            String typeLabel;
+            if ("cold_water".equals(item.resourceType)) typeLabel = "💧冷水";
+            else if ("hot_water".equals(item.resourceType)) typeLabel = "🔥热水";
+            else typeLabel = "⚡电表";
+            holder.tvReading.setText(typeLabel);
             holder.tvTime.setText(item.readDate + " " + item.readTime);
             holder.tvStatus.setText("未上传");
             holder.itemView.setOnLongClickListener(v -> {
@@ -602,7 +671,6 @@ public class MeterInputFragment extends Fragment {
 
         static class ViewHolder extends RecyclerView.ViewHolder {
             TextView tvRoom, tvReading, tvTime, tvStatus;
-
             ViewHolder(@NonNull View itemView) {
                 super(itemView);
                 tvRoom = itemView.findViewById(R.id.tv_room);

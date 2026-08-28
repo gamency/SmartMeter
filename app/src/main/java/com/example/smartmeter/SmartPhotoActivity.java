@@ -7,15 +7,17 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.ArrayAdapter;
+import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.Spinner;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,9 +27,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONArray;
@@ -56,7 +60,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
     private static final int REQUEST_PERMISSION = 102;
     private static final String PHOTO_FILE_PROVIDER = "com.example.smartmeter.fileprovider";
 
-    // SharedPreferences 缓存 Key
+    // SharedPreferences 缓存
     private static final String PREFS_NAME = "smart_meter_prefs";
     private static final String KEY_ROOM_LIST = "room_list_cache";
     private static final String KEY_MODE = "mode_preference";
@@ -67,104 +71,125 @@ public class SmartPhotoActivity extends AppCompatActivity {
     private static final int MODE_BY_ROOM = 0;
     private static final int MODE_BY_TYPE = 1;
 
-    // 视图变量
-    private Spinner roomSpinner;
-    private TextView lastReadingText;
-    private RecyclerView pendingRecyclerView;
-    private Button takePhotoBtn;
-    private Button syncBtn;
+    // ===== 新布局控件 =====
+    private TextView tvSelectedRoom, tvSelectedType, tvProgressLight;
+    private TextView tvCameraHint, tvCameraSub, tvNetworkStatus, tvCountBadge;
+    private LinearLayout llCamera;
+    private Button btnTypeElectric, btnTypeCold, btnTypeHot;
+    private TextView btnClearAll;
+    private RecyclerView rvCached;
+    private TextView tvEmptyCached;
+    private Button btnSubmitAll;
 
-    // 新增控件
-    private TextView tvCurrentRoom, tvCurrentType, tvProgress;
-    private Button btnElectric, btnColdWater, btnHotWater;
-    private Button btnModeRoom, btnModeType;
-    private Button btnContinuous;
-    private Button btnAutoType;
-    private Button btnPrevRoom, btnNextRoom;  // 左右切换按钮
-
+    // ===== 状态变量 =====
     private SmartReadingDatabase db;
     private List<RoomItem> roomList = new ArrayList<>();
+    private List<CachedRecord> cachedList = new ArrayList<>();
+    private CachedRecordAdapter cachedAdapter;
     private String currentPhotoPath;
     private int selectedRoomId = -1;
-    private String selectedResourceType = "electric";
-
-    // 状态
+    private String selectedRoomName = "";
+    private int selectedTypeIndex = 0; // 0=电, 1=冷水, 2=热水
     private int currentMode = MODE_BY_TYPE;
     private boolean isContinuous = true;
     private boolean isAutoType = false;
 
     // 资源类型常量
-    private static final String TYPE_ELECTRIC = "electric";
-    private static final String TYPE_COLD_WATER = "cold_water";
-    private static final String TYPE_HOT_WATER = "hot_water";
     private static final String[] TYPE_LABELS = {"⚡电表", "💧冷水", "🔥热水"};
-    private static final String[] TYPE_VALUES = {TYPE_ELECTRIC, TYPE_COLD_WATER, TYPE_HOT_WATER};
+    private static final String[] TYPE_VALUES = {"electric", "cold_water", "hot_water"};
+    private static final int[] TYPE_COLORS = {0xFF4A6CF7, 0xFF22C55E, 0xFFF59E0B};
 
+    // ================================================================
+    // 生命周期
+    // ================================================================
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_smart_photo);
 
+        // 状态栏颜色
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(getColor(R.color.primary_blue));
+            getWindow().getDecorView().setSystemUiVisibility(
+                    getWindow().getDecorView().getSystemUiVisibility() & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        }
+
         db = SmartReadingDatabase.getInstance(this);
 
-        // 初始化视图
-        roomSpinner = findViewById(R.id.roomSpinner);
-        lastReadingText = findViewById(R.id.lastReadingText);
-        pendingRecyclerView = findViewById(R.id.pendingRecyclerView);
-        takePhotoBtn = findViewById(R.id.takePhotoBtn);
-        syncBtn = findViewById(R.id.syncBtn);
+        // ===== 初始化新布局控件 =====
+        tvSelectedRoom = findViewById(R.id.tv_selected_room);
+        tvSelectedType = findViewById(R.id.tv_selected_type);
+        tvProgressLight = findViewById(R.id.tv_progress_light);
+        tvCameraHint = findViewById(R.id.tv_camera_hint);
+        tvCameraSub = findViewById(R.id.tv_camera_sub);
+        tvNetworkStatus = findViewById(R.id.tv_network_status);
+        tvCountBadge = findViewById(R.id.tv_count_badge);
+        llCamera = findViewById(R.id.ll_camera);
+        btnTypeElectric = findViewById(R.id.btn_type_electric);
+        btnTypeCold = findViewById(R.id.btn_type_cold);
+        btnTypeHot = findViewById(R.id.btn_type_hot);
+        btnClearAll = findViewById(R.id.btn_clear_all);
+        rvCached = findViewById(R.id.rv_cached);
+        tvEmptyCached = findViewById(R.id.tv_empty_cached);
+        btnSubmitAll = findViewById(R.id.btn_submit_all);
 
-        tvCurrentRoom = findViewById(R.id.tv_current_room);
-        tvCurrentType = findViewById(R.id.tv_current_type);
-        tvProgress = findViewById(R.id.tv_progress);
+        // ===== 设置 RecyclerView =====
+        rvCached.setLayoutManager(new LinearLayoutManager(this));
+        cachedAdapter = new CachedRecordAdapter(cachedList, record -> {
+            cachedList.remove(record);
+            cachedAdapter.notifyDataSetChanged();
+            updateUI();
+        });
+        rvCached.setAdapter(cachedAdapter);
 
-        btnElectric = findViewById(R.id.btn_electric);
-        btnColdWater = findViewById(R.id.btn_cold_water);
-        btnHotWater = findViewById(R.id.btn_hot_water);
-
-        btnModeRoom = findViewById(R.id.btn_mode_room);
-        btnModeType = findViewById(R.id.btn_mode_type);
-
-        btnContinuous = findViewById(R.id.btn_continuous);
-        btnAutoType = findViewById(R.id.btn_auto_type);
-
-        btnPrevRoom = findViewById(R.id.btn_prev_room);
-        btnNextRoom = findViewById(R.id.btn_next_room);
-
-        pendingRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-
-        // 加载用户偏好
+        // ===== 加载偏好 =====
         loadPreferences();
 
-        // 表型按钮点击
-        btnElectric.setOnClickListener(v -> selectResourceType(0));
-        btnColdWater.setOnClickListener(v -> selectResourceType(1));
-        btnHotWater.setOnClickListener(v -> selectResourceType(2));
+        // ===== 默认选中电表 =====
+        selectType(0);
 
-        // 模式切换
-        btnModeRoom.setOnClickListener(v -> switchMode(MODE_BY_ROOM));
-        btnModeType.setOnClickListener(v -> switchMode(MODE_BY_TYPE));
+        // ===== 点击事件 =====
+        tvSelectedRoom.setOnClickListener(v -> showRoomSelectorDialog());
+        llCamera.setOnClickListener(v -> checkPermissionAndTakePhoto());
 
-        // 连续拍照开关
-        btnContinuous.setOnClickListener(v -> toggleContinuous());
+        btnTypeElectric.setOnClickListener(v -> selectType(0));
+        btnTypeCold.setOnClickListener(v -> selectType(1));
+        btnTypeHot.setOnClickListener(v -> selectType(2));
 
-        // 表型自动切换开关
-        btnAutoType.setOnClickListener(v -> toggleAutoType());
+        btnSubmitAll.setOnClickListener(v -> syncRecords());
 
-        // 左右切换按钮
-        btnPrevRoom.setOnClickListener(v -> switchRoom(-1));
-        btnNextRoom.setOnClickListener(v -> switchRoom(1));
+        btnClearAll.setOnClickListener(v -> {
+            if (!cachedList.isEmpty()) {
+                new AlertDialog.Builder(this)
+                        .setTitle("确认清空")
+                        .setMessage("确定要删除所有缓存记录吗？")
+                        .setPositiveButton("清空", (d, w) -> {
+                            cachedList.clear();
+                            cachedAdapter.notifyDataSetChanged();
+                            updateUI();
+                            Toast.makeText(this, "已清空所有缓存", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("取消", null)
+                        .show();
+            }
+        });
 
-        // 拍照按钮
-        takePhotoBtn.setOnClickListener(v -> checkPermissionAndTakePhoto());
-        syncBtn.setOnClickListener(v -> syncRecords());
-
-        // 加载房间列表（先缓存，后网络）
+        // ===== 加载房间列表 =====
         loadRoomListFromCache();
         loadRoomListFromNetwork();
 
-        loadPendingList();
-        updateCurrentDisplay();
+        // ===== 加载本地缓存记录 =====
+        loadCachedRecords();
+        updateUI();
+        checkNetworkStatus();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadCachedRecords();
+        updateUI();
+        checkNetworkStatus();
     }
 
     // ================================================================
@@ -175,9 +200,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
         currentMode = prefs.getInt(KEY_MODE, MODE_BY_TYPE);
         isContinuous = prefs.getBoolean(KEY_CONTINUOUS, true);
         isAutoType = prefs.getBoolean(KEY_AUTO_TYPE, false);
-        updateModeUI();
-        updateContinuousUI();
-        updateAutoTypeUI();
+        // 更新模式UI（目前没有模式切换按钮在SmartPhotoActivity，但保留状态）
     }
 
     private void savePreferences() {
@@ -192,131 +215,68 @@ public class SmartPhotoActivity extends AppCompatActivity {
     // ================================================================
     // 表型选择
     // ================================================================
-    private void selectResourceType(int index) {
-        selectedResourceType = TYPE_VALUES[index];
-        resetTypeButtons();
-        Button[] buttons = {btnElectric, btnColdWater, btnHotWater};
-        buttons[index].setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4A6CF7));
-        buttons[index].setTextColor(0xFFFFFFFF);
-        tvCurrentType.setText(TYPE_LABELS[index]);
-        updateLastReading(selectedRoomId);
-        updateCurrentDisplay();
-    }
-
-    private void resetTypeButtons() {
-        Button[] buttons = {btnElectric, btnColdWater, btnHotWater};
-        for (Button btn : buttons) {
-            btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFE2E8F0));
-            btn.setTextColor(0xFF64748B);
+    private void selectType(int index) {
+        selectedTypeIndex = index;
+        Button[] buttons = {btnTypeElectric, btnTypeCold, btnTypeHot};
+        for (int i = 0; i < buttons.length; i++) {
+            if (i == index) {
+                buttons[i].setBackgroundTintList(android.content.res.ColorStateList.valueOf(TYPE_COLORS[i]));
+                buttons[i].setTextColor(Color.WHITE);
+            } else {
+                buttons[i].setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFE5E7EB));
+                buttons[i].setTextColor(0xFF9CA3AF);
+            }
         }
+        tvSelectedType.setText(TYPE_LABELS[index]);
+    }
+
+    private int getCurrentTypePosition() {
+        return selectedTypeIndex;
+    }
+
+    private String getCurrentResourceType() {
+        return TYPE_VALUES[selectedTypeIndex];
     }
 
     // ================================================================
-    // 模式切换
+    // UI 更新
     // ================================================================
-    private void switchMode(int mode) {
-        if (currentMode == mode) return;
-        currentMode = mode;
-        updateModeUI();
-        savePreferences();
-        // 切换模式时，自动调整到合理位置
-        if (mode == MODE_BY_TYPE) {
-            int currentFloor = roomList.get(roomSpinner.getSelectedItemPosition()).getFloor();
-            int firstRoom = findFirstRoomInFloor(currentFloor);
-            if (firstRoom != -1) roomSpinner.setSelection(firstRoom);
+    private void updateUI() {
+        int count = cachedList.size();
+        tvCountBadge.setText(String.valueOf(count));
+        tvProgressLight.setText("已拍 " + count);
+
+        if (count > 0) {
+            btnSubmitAll.setEnabled(true);
+            btnSubmitAll.setText("同步 " + count + " 条");
+            btnClearAll.setVisibility(View.VISIBLE);
+            tvCameraSub.setText("已拍 " + count + " 张，点击同步上传");
         } else {
-            selectResourceType(0);
+            btnSubmitAll.setEnabled(false);
+            btnSubmitAll.setText("同步 0 条");
+            btnClearAll.setVisibility(View.GONE);
+            tvCameraSub.setText("");
         }
-        updateCurrentDisplay();
-        Snackbar.make(findViewById(android.R.id.content),
-                "已切换到 " + (mode == MODE_BY_ROOM ? "按房间" : "按表型") + " 模式",
-                Snackbar.LENGTH_SHORT).show();
-    }
-
-    private void updateModeUI() {
-        if (currentMode == MODE_BY_ROOM) {
-            btnModeRoom.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4A6CF7));
-            btnModeRoom.setTextColor(0xFFFFFFFF);
-            btnModeType.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFE2E8F0));
-            btnModeType.setTextColor(0xFF64748B);
+        if (cachedList.isEmpty()) {
+            tvEmptyCached.setVisibility(View.VISIBLE);
+            rvCached.setVisibility(View.GONE);
         } else {
-            btnModeType.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4A6CF7));
-            btnModeType.setTextColor(0xFFFFFFFF);
-            btnModeRoom.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFE2E8F0));
-            btnModeRoom.setTextColor(0xFF64748B);
+            tvEmptyCached.setVisibility(View.GONE);
+            rvCached.setVisibility(View.VISIBLE);
         }
     }
 
-    // ================================================================
-    // 连续拍照开关
-    // ================================================================
-    private void toggleContinuous() {
-        isContinuous = !isContinuous;
-        updateContinuousUI();
-        savePreferences();
-        Snackbar.make(findViewById(android.R.id.content),
-                "连续拍照 " + (isContinuous ? "已开启" : "已关闭"),
-                Snackbar.LENGTH_SHORT).show();
-    }
-
-    private void updateContinuousUI() {
-        if (isContinuous) {
-            btnContinuous.setText("开");
-            btnContinuous.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF22C55E));
-            btnContinuous.setTextColor(0xFFFFFFFF);
-        } else {
-            btnContinuous.setText("关");
-            btnContinuous.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFEF4444));
-            btnContinuous.setTextColor(0xFFFFFFFF);
-        }
-    }
-
-    // ================================================================
-    // 表型自动切换开关
-    // ================================================================
-    private void toggleAutoType() {
-        isAutoType = !isAutoType;
-        updateAutoTypeUI();
-        savePreferences();
-        Snackbar.make(findViewById(android.R.id.content),
-                "表型自动切换 " + (isAutoType ? "已开启" : "已关闭"),
-                Snackbar.LENGTH_SHORT).show();
-    }
-
-    private void updateAutoTypeUI() {
-        if (isAutoType) {
-            btnAutoType.setText("开");
-            btnAutoType.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF22C55E));
-            btnAutoType.setTextColor(0xFFFFFFFF);
-        } else {
-            btnAutoType.setText("关");
-            btnAutoType.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFEF4444));
-            btnAutoType.setTextColor(0xFFFFFFFF);
-        }
-    }
-
-    // ================================================================
-    // 房间切换（左右箭头按钮）
-    // ================================================================
-    private void switchRoom(int direction) {
-        if (roomList.isEmpty()) return;
-        int currentPos = roomSpinner.getSelectedItemPosition();
-        if (currentPos < 0) currentPos = 0;
-        int newPos = (currentPos + direction) % roomList.size();
-        if (newPos < 0) newPos = roomList.size() - 1;
-        roomSpinner.setSelection(newPos);
-        // 触发选中事件，由 OnItemSelectedListener 处理
-        updateCurrentDisplay();
-        Snackbar.make(findViewById(android.R.id.content),
-                "切换到 " + roomList.get(newPos).getName(),
-                Snackbar.LENGTH_SHORT).show();
+    private void checkNetworkStatus() {
+        // 简单显示在线
+        tvNetworkStatus.setText("📶 在线");
+        tvNetworkStatus.setTextColor(ResourcesCompat.getColor(getResources(), R.color.success_green, null));
     }
 
     // ================================================================
     // 房间列表（缓存 + 网络）
     // ================================================================
     private void loadRoomListFromCache() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         String json = prefs.getString(KEY_ROOM_LIST, null);
         if (json != null) {
             try {
@@ -336,20 +296,20 @@ public class SmartPhotoActivity extends AppCompatActivity {
                 }
                 if (!cachedRooms.isEmpty()) {
                     roomList = cachedRooms;
-                    updateSpinner();
-                    if (roomList.size() > 0) {
+                    if (!roomList.isEmpty()) {
                         selectedRoomId = roomList.get(0).getId();
-                        takePhotoBtn.setEnabled(true);
-                        selectResourceType(0);
-                        updateCurrentDisplay();
+                        selectedRoomName = roomList.get(0).getName();
+                        tvSelectedRoom.setText(selectedRoomName);
+                        llCamera.setEnabled(true);
+                        tvCameraHint.setText("点击拍照");
                     }
                 }
             } catch (Exception e) {
                 Log.e(TAG, "解析缓存房间列表失败", e);
             }
         } else {
-            takePhotoBtn.setEnabled(false);
-            Toast.makeText(this, "暂无缓存，正在联网加载...", Toast.LENGTH_SHORT).show();
+            tvSelectedRoom.setText("加载中...");
+            llCamera.setEnabled(false);
         }
     }
 
@@ -377,7 +337,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
     }
 
     private void saveRoomListToCache(String jsonData) {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         prefs.edit().putString(KEY_ROOM_LIST, jsonData).apply();
     }
 
@@ -399,12 +359,12 @@ public class SmartPhotoActivity extends AppCompatActivity {
             if (!newRooms.isEmpty()) {
                 runOnUiThread(() -> {
                     roomList = newRooms;
-                    updateSpinner();
                     if (!roomList.isEmpty()) {
                         selectedRoomId = roomList.get(0).getId();
-                        takePhotoBtn.setEnabled(true);
-                        selectResourceType(0);
-                        updateCurrentDisplay();
+                        selectedRoomName = roomList.get(0).getName();
+                        tvSelectedRoom.setText(selectedRoomName);
+                        llCamera.setEnabled(true);
+                        tvCameraHint.setText("点击拍照");
                     }
                     Toast.makeText(this, "已更新房间列表", Toast.LENGTH_SHORT).show();
                 });
@@ -415,88 +375,37 @@ public class SmartPhotoActivity extends AppCompatActivity {
     }
 
     // ================================================================
-    // Spinner 更新
+    // 房间选择对话框（BottomSheet）
     // ================================================================
-    private void updateSpinner() {
-        if (roomList.isEmpty()) return;
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item,
-                roomList.stream().map(RoomItem::getName).toArray(String[]::new));
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        roomSpinner.setAdapter(adapter);
-        roomSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
-                if (position < roomList.size()) {
-                    selectedRoomId = roomList.get(position).getId();
-                    updateLastReading(selectedRoomId);
-                    updateCurrentDisplay();
-                }
-            }
-            @Override
-            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+    private void showRoomSelectorDialog() {
+        if (roomList.isEmpty()) {
+            Toast.makeText(this, "无房间列表，请连接网络加载", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View sheetView = getLayoutInflater().inflate(R.layout.dialog_room_selector, null);
+        RecyclerView recyclerView = sheetView.findViewById(R.id.rv_rooms);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        RoomSelectorAdapter adapter = new RoomSelectorAdapter(roomList, room -> {
+            selectedRoomId = room.getId();
+            selectedRoomName = room.getName();
+            tvSelectedRoom.setText(selectedRoomName);
+            dialog.dismiss();
         });
-        if (!roomList.isEmpty()) {
-            roomSpinner.setSelection(0);
-            selectedRoomId = roomList.get(0).getId();
-            updateCurrentDisplay();
-        }
+        recyclerView.setAdapter(adapter);
+
+        dialog.setContentView(sheetView);
+        dialog.show();
     }
 
     // ================================================================
-    // 显示更新
+    // 缓存记录加载
     // ================================================================
-    private void updateCurrentDisplay() {
-        int roomPos = roomSpinner.getSelectedItemPosition();
-        if (roomPos >= 0 && roomPos < roomList.size()) {
-            String roomName = roomList.get(roomPos).getName();
-            tvCurrentRoom.setText(roomName);
-            tvProgress.setText((roomPos + 1) + "/" + roomList.size());
-        } else {
-            tvCurrentRoom.setText("未选择");
-            tvProgress.setText("0/0");
-        }
-        // 表型已经由 selectResourceType 更新
-    }
-
-    private int getCurrentTypePosition() {
-        for (int i = 0; i < TYPE_VALUES.length; i++) {
-            if (TYPE_VALUES[i].equals(selectedResourceType)) return i;
-        }
-        return 0;
-    }
-
-    private void updateLastReading(int roomId) {
-        lastReadingText.setText("上月: -- (" + getResourceLabel(selectedResourceType) + ")");
-    }
-
-    private String getResourceLabel(String type) {
-        switch (type) {
-            case TYPE_ELECTRIC: return "电表";
-            case TYPE_COLD_WATER: return "冷水表";
-            case TYPE_HOT_WATER: return "热水表";
-            default: return "电表";
-        }
-    }
-
-    // ================================================================
-    // 待同步列表
-    // ================================================================
-    private void loadPendingList() {
-        new Thread(() -> {
-            List<SmartReadingEntity> pending = db.smartReadingDao().getPendingReadings();
-            runOnUiThread(() -> {
-                PendingAdapter adapter = new PendingAdapter(pending, this::deletePending);
-                pendingRecyclerView.setAdapter(adapter);
-            });
-        }).start();
-    }
-
-    private void deletePending(SmartReadingEntity entity) {
-        new Thread(() -> {
-            db.smartReadingDao().delete(entity);
-            loadPendingList();
-        }).start();
+    private void loadCachedRecords() {
+        // 从内存加载（拍照后已添加到cachedList）
+        // 无需额外操作
+        updateUI();
     }
 
     // ================================================================
@@ -594,25 +503,19 @@ public class SmartPhotoActivity extends AppCompatActivity {
             return;
         }
 
-        // 获取房间名
-        String roomName = roomList.stream()
-                .filter(r -> r.getId() == selectedRoomId)
-                .findFirst()
-                .map(RoomItem::getName)
-                .orElse("");
-
-        // 如果选择的是水表，弹出校验对话框
-        if (!selectedResourceType.equals(TYPE_ELECTRIC)) {
-            showWaterMeterValidationDialog(photoPath, roomName);
+        // 如果是水表，弹出校验对话框
+        String resourceType = getCurrentResourceType();
+        if (!resourceType.equals("electric")) {
+            showWaterMeterValidationDialog(photoPath);
         } else {
-            saveReading(photoPath, roomName, null);
+            saveReading(photoPath, null);
         }
     }
 
     // ================================================================
     // 水表校验对话框
     // ================================================================
-    private void showWaterMeterValidationDialog(String photoPath, String roomName) {
+    private void showWaterMeterValidationDialog(String photoPath) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("🔍 水表读数确认");
 
@@ -629,14 +532,14 @@ public class SmartPhotoActivity extends AppCompatActivity {
             }
             try {
                 double reading = Double.parseDouble(val);
-                saveReading(photoPath, roomName, reading);
+                saveReading(photoPath, reading);
             } catch (NumberFormatException e) {
                 Toast.makeText(this, "请输入有效数字", Toast.LENGTH_SHORT).show();
             }
         });
 
         builder.setNegativeButton("跳过", (dialog, which) -> {
-            saveReading(photoPath, roomName, null);
+            saveReading(photoPath, null);
         });
 
         builder.setMessage("水表读数可能包含小数（如123.4），请手动输入读数。\n如果选择「跳过」，系统将尝试AI识别。");
@@ -644,9 +547,9 @@ public class SmartPhotoActivity extends AppCompatActivity {
     }
 
     // ================================================================
-    // 保存读数到本地数据库
+    // 保存读数到本地缓存（内存）
     // ================================================================
-    private void saveReading(String photoPath, String roomName, Double manualValue) {
+    private void saveReading(String photoPath, Double manualValue) {
         Date now = new Date();
         SimpleDateFormat dateSdf = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA);
         SimpleDateFormat timeSdf = new SimpleDateFormat("HH:mm", Locale.CHINA);
@@ -662,203 +565,123 @@ public class SmartPhotoActivity extends AppCompatActivity {
         else if (hour >= 19 && hour < 22) { pointId = 6; timeLabel = "晚上"; }
         else { pointId = 7; timeLabel = "深夜"; }
 
-        boolean isManual = (manualValue != null);
-        double manualReading = isManual ? manualValue : 0;
+        String resourceType = getCurrentResourceType();
 
-        SmartReadingEntity entity = new SmartReadingEntity(
+        CachedRecord record = new CachedRecord(
                 selectedRoomId,
-                roomName,
+                selectedRoomName,
                 dateSdf.format(now),
                 timeSdf.format(now),
                 pointId,
                 timeLabel,
                 photoPath,
-                manualReading,
+                manualValue,
+                false,
                 "pending",
-                isManual,
-                selectedResourceType
+                resourceType
         );
+        cachedList.add(0, record);
+        cachedAdapter.notifyDataSetChanged();
+        updateUI();
+        Toast.makeText(this, "📸 已保存 (" + TYPE_LABELS[selectedTypeIndex] + ")", Toast.LENGTH_SHORT).show();
 
-        new Thread(() -> {
-            db.smartReadingDao().insert(entity);
-            runOnUiThread(() -> {
-                Toast.makeText(this, "✅ 已保存 (" + getResourceLabel(selectedResourceType) + ")", Toast.LENGTH_SHORT).show();
-                loadPendingList();
-                // 如果连续拍照开启，则自动推进
-                if (isContinuous) {
-                    advanceToNext();
-                }
-            });
-        }).start();
+        // 如果连续拍照开启，则自动推进
+        if (isContinuous) {
+            advanceToNext();
+        }
     }
 
     // ================================================================
-    // 连续拍照推进逻辑（核心）
+    // 连续拍照推进逻辑（简化，仅按表型模式推进同楼层下一个房间）
     // ================================================================
     private void advanceToNext() {
         if (roomList.isEmpty()) return;
-
-        int roomPos = roomSpinner.getSelectedItemPosition();
-        if (roomPos < 0 || roomPos >= roomList.size()) return;
-
-        int typePos = getCurrentTypePosition();
-        int currentFloor = roomList.get(roomPos).getFloor();
-
-        if (currentMode == MODE_BY_ROOM) {
-            // ===== 按房间模式：先推进表型，表型到头再推进同楼层下一个房间 =====
-            if (typePos < TYPE_VALUES.length - 1) {
-                // 同一房间，下一个表型
-                selectResourceType(typePos + 1);
-                Snackbar.make(findViewById(android.R.id.content),
-                        "📌 " + roomList.get(roomPos).getName() + " → " + TYPE_LABELS[typePos + 1],
-                        Snackbar.LENGTH_LONG).show();
-            } else {
-                // 表型到头，找同楼层下一个房间（不跨楼层）
-                int nextRoomPos = findNextRoomInSameFloor(roomPos, currentFloor);
-                if (nextRoomPos != -1) {
-                    selectResourceType(0);
-                    roomSpinner.setSelection(nextRoomPos);
-                    Snackbar.make(findViewById(android.R.id.content),
-                            "✅ " + roomList.get(roomPos).getName() + " 已完成，转到 " + roomList.get(nextRoomPos).getName(),
-                            Snackbar.LENGTH_LONG).show();
-                } else {
-                    Snackbar.make(findViewById(android.R.id.content),
-                            "✅ " + currentFloor + "楼已全部抄完，请手动切换到下一层",
-                            Snackbar.LENGTH_LONG).show();
-                }
-            }
-        } else {
-            // ===== 按表型模式 =====
-            // 找同楼层下一个房间（同表型）
-            int nextRoomPos = findNextRoomInSameFloor(roomPos, currentFloor);
-            if (nextRoomPos != -1) {
-                // 同楼层有下一个房间 → 跳转，保持当前表型
-                roomSpinner.setSelection(nextRoomPos);
-                Snackbar.make(findViewById(android.R.id.content),
-                        "📌 " + roomList.get(nextRoomPos).getName() + " → " + TYPE_LABELS[typePos],
-                        Snackbar.LENGTH_LONG).show();
-            } else {
-                // 当前楼层该表型已全部拍完
-                if (isAutoType) {
-                    // ===== 自动切换到下一个表型 =====
-                    if (typePos < TYPE_VALUES.length - 1) {
-                        // 切换到下一个表型，回到当前楼层第一个房间
-                        int firstRoomInFloor = findFirstRoomInFloor(currentFloor);
-                        if (firstRoomInFloor != -1) {
-                            selectResourceType(typePos + 1);
-                            roomSpinner.setSelection(firstRoomInFloor);
-                            Snackbar.make(findViewById(android.R.id.content),
-                                    "🔄 " + TYPE_LABELS[typePos] + " 已完成，自动切换到 " + TYPE_LABELS[typePos + 1] + "，从 " + roomList.get(firstRoomInFloor).getName() + " 开始",
-                                    Snackbar.LENGTH_LONG).show();
-                        } else {
-                            Snackbar.make(findViewById(android.R.id.content),
-                                    "当前楼层无更多房间，请手动切换",
-                                    Snackbar.LENGTH_LONG).show();
-                        }
-                    } else {
-                        // 所有表型已完成
-                        Snackbar.make(findViewById(android.R.id.content),
-                                "🎉 " + currentFloor + "楼所有表型已全部抄完！",
-                                Snackbar.LENGTH_LONG).show();
-                    }
-                } else {
-                    // ===== 自动切换关闭：只提示，不跳转 =====
-                    Snackbar.make(findViewById(android.R.id.content),
-                                    "✅ " + currentFloor + "楼 " + TYPE_LABELS[typePos] + " 已全部抄完，请手动切换表型或楼层",
-                                    Snackbar.LENGTH_LONG)
-                            .setAction("切换表型", v -> showTypePicker())
-                            .show();
-                }
-            }
-        }
-        updateCurrentDisplay();
-    }
-
-    // ================================================================
-    // 辅助方法
-    // ================================================================
-    private int findNextRoomInSameFloor(int currentPos, int floor) {
-        for (int i = currentPos + 1; i < roomList.size(); i++) {
-            if (roomList.get(i).getFloor() == floor) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private int findFirstRoomInFloor(int floor) {
+        int roomPos = -1;
         for (int i = 0; i < roomList.size(); i++) {
-            if (roomList.get(i).getFloor() == floor) {
-                return i;
+            if (roomList.get(i).getId() == selectedRoomId) {
+                roomPos = i;
+                break;
             }
         }
-        return -1;
-    }
+        if (roomPos == -1) return;
 
-    private void showTypePicker() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("选择表型");
-        builder.setItems(TYPE_LABELS, (dialog, which) -> {
-            selectResourceType(which);
-            // 切换后，房间自动定位到当前楼层第一个房间
-            int currentFloor = roomList.get(roomSpinner.getSelectedItemPosition()).getFloor();
-            int firstRoom = findFirstRoomInFloor(currentFloor);
-            if (firstRoom != -1) roomSpinner.setSelection(firstRoom);
-            updateCurrentDisplay();
+        int currentFloor = roomList.get(roomPos).getFloor();
+        int nextRoomPos = -1;
+        // 找同楼层下一个房间
+        for (int i = roomPos + 1; i < roomList.size(); i++) {
+            if (roomList.get(i).getFloor() == currentFloor) {
+                nextRoomPos = i;
+                break;
+            }
+        }
+        if (nextRoomPos != -1) {
+            // 跳到下一个房间，保持当前表型
+            selectedRoomId = roomList.get(nextRoomPos).getId();
+            selectedRoomName = roomList.get(nextRoomPos).getName();
+            tvSelectedRoom.setText(selectedRoomName);
             Snackbar.make(findViewById(android.R.id.content),
-                    "已切换到 " + TYPE_LABELS[which],
-                    Snackbar.LENGTH_SHORT).show();
-        });
-        builder.setNegativeButton("取消", null);
-        builder.show();
+                    "📌 " + selectedRoomName + " → " + TYPE_LABELS[selectedTypeIndex],
+                    Snackbar.LENGTH_LONG).show();
+        } else {
+            Snackbar.make(findViewById(android.R.id.content),
+                    "✅ " + currentFloor + "楼 " + TYPE_LABELS[selectedTypeIndex] + " 已全部拍完",
+                    Snackbar.LENGTH_LONG).show();
+        }
     }
 
     // ================================================================
-    // 同步功能
+    // 同步功能（批量提交）
     // ================================================================
     private void syncRecords() {
-        new Thread(() -> {
-            List<SmartReadingEntity> pending = db.smartReadingDao().getPendingReadings();
-            if (pending.isEmpty()) {
-                runOnUiThread(() -> Toast.makeText(this, "没有待同步的记录", Toast.LENGTH_SHORT).show());
-                return;
-            }
+        if (cachedList.isEmpty()) {
+            Toast.makeText(this, "没有待同步的记录", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-            JSONArray recordsArray = new JSONArray();
-            for (SmartReadingEntity entity : pending) {
-                try {
-                    JSONObject obj = new JSONObject();
-                    obj.put("local_id", String.valueOf(entity.id));
-                    obj.put("room_id", entity.roomId);
-                    obj.put("read_date", entity.readDate);
-                    obj.put("read_time", entity.readTime);
-                    obj.put("point_id", entity.pointId);
-                    obj.put("time_label", entity.timeLabel);
-                    obj.put("manual_reading", entity.isManual ? entity.manualReading : JSONObject.NULL);
-                    obj.put("resource_type", entity.resourceType != null ? entity.resourceType : "electric");
+        final List<CachedRecord> toSubmit = new ArrayList<>(cachedList);
 
-                    File file = new File(entity.photoPath);
-                    if (file.exists()) {
-                        byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
-                        String base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT);
-                        obj.put("photo_base64", "data:image/jpeg;base64," + base64);
-                    } else {
-                        obj.put("photo_base64", JSONObject.NULL);
-                    }
-                    recordsArray.put(obj);
-                } catch (Exception e) {
-                    e.printStackTrace();
+        JSONArray recordsArray = new JSONArray();
+        for (CachedRecord record : toSubmit) {
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("local_id", String.valueOf(System.currentTimeMillis()));
+                obj.put("room_id", record.roomId);
+                obj.put("read_date", record.readDate);
+                obj.put("read_time", record.readTime);
+                obj.put("point_id", record.pointId);
+                obj.put("time_label", record.timeLabel);
+                obj.put("resource_type", record.resourceType != null ? record.resourceType : "electric");
+                obj.put("manual_reading", record.manualReading != null ? record.manualReading : JSONObject.NULL);
+                // 这里我们需要将本地照片转为Base64，但record中存储的是路径，需读取文件
+                File file = new File(record.photoPath);
+                if (file.exists()) {
+                    byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
+                    String base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT);
+                    obj.put("photo_base64", "data:image/jpeg;base64," + base64);
+                } else {
+                    obj.put("photo_base64", JSONObject.NULL);
                 }
+                recordsArray.put(obj);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
+        }
 
+        btnSubmitAll.setEnabled(false);
+        btnSubmitAll.setText("⏳ 同步中...");
+
+        new Thread(() -> {
             try {
                 OkHttpClient client = new OkHttpClient.Builder()
                         .connectTimeout(30, TimeUnit.SECONDS)
                         .readTimeout(30, TimeUnit.SECONDS)
+                        .writeTimeout(30, TimeUnit.SECONDS)
                         .build();
+                JSONObject requestBody = new JSONObject();
+                requestBody.put("records", recordsArray);
                 RequestBody body = RequestBody.create(
                         MediaType.parse("application/json; charset=utf-8"),
-                        new JSONObject().put("records", recordsArray).toString()
+                        requestBody.toString()
                 );
                 Request request = new Request.Builder()
                         .url(Config.BASE_URL + "/api/smart/batch_sync")
@@ -871,34 +694,132 @@ public class SmartPhotoActivity extends AppCompatActivity {
                     String batchId = result.getString("batch_id");
                     JSONArray resultsArray = result.getJSONArray("results");
 
-                    for (int i = 0; i < resultsArray.length(); i++) {
-                        JSONObject res = resultsArray.getJSONObject(i);
-                        String localId = res.getString("local_id");
-                        long id = Long.parseLong(localId);
-                        for (SmartReadingEntity entity : pending) {
-                            if (entity.id == id) {
-                                entity.status = "synced";
-                                entity.batchId = batchId;
-                                db.smartReadingDao().update(entity);
-                                break;
-                            }
-                        }
-                    }
-
                     runOnUiThread(() -> {
                         Toast.makeText(this, "✅ 同步成功！共 " + resultsArray.length() + " 条", Toast.LENGTH_SHORT).show();
-                        loadPendingList();
+                        // 清空缓存
+                        cachedList.clear();
+                        cachedAdapter.notifyDataSetChanged();
+                        updateUI();
+                        // 跳转到复核界面
                         Intent intent = new Intent(SmartPhotoActivity.this, SmartReviewActivity.class);
                         intent.putExtra("batchId", batchId);
                         startActivity(intent);
                     });
                 } else {
-                    runOnUiThread(() -> Toast.makeText(this, "同步失败: " + response.message(), Toast.LENGTH_SHORT).show());
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "同步失败: " + response.message(), Toast.LENGTH_SHORT).show();
+                        btnSubmitAll.setEnabled(true);
+                        btnSubmitAll.setText("同步 " + cachedList.size() + " 条");
+                    });
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                runOnUiThread(() -> Toast.makeText(this, "同步异常: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "同步异常: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    btnSubmitAll.setEnabled(true);
+                    btnSubmitAll.setText("同步 " + cachedList.size() + " 条");
+                });
             }
         }).start();
+    }
+
+    // ================================================================
+    // 内部类：缓存记录
+    // ================================================================
+    static class CachedRecord {
+        int roomId;
+        String roomName;
+        String readDate;
+        String readTime;
+        int pointId;
+        String timeLabel;
+        String photoPath;
+        Double manualReading;
+        boolean synced;
+        String status;
+        String resourceType;
+
+        CachedRecord(int roomId, String roomName, String readDate, String readTime,
+                     int pointId, String timeLabel, String photoPath,
+                     Double manualReading, boolean synced, String status, String resourceType) {
+            this.roomId = roomId;
+            this.roomName = roomName;
+            this.readDate = readDate;
+            this.readTime = readTime;
+            this.pointId = pointId;
+            this.timeLabel = timeLabel;
+            this.photoPath = photoPath;
+            this.manualReading = manualReading;
+            this.synced = synced;
+            this.status = status;
+            this.resourceType = resourceType;
+        }
+    }
+
+    // ================================================================
+    // 内部类：适配器
+    // ================================================================
+    static class CachedRecordAdapter extends RecyclerView.Adapter<CachedRecordAdapter.ViewHolder> {
+
+        private List<CachedRecord> list;
+        private OnDeleteListener deleteListener;
+
+        interface OnDeleteListener {
+            void onDelete(CachedRecord record);
+        }
+
+        CachedRecordAdapter(List<CachedRecord> list, OnDeleteListener deleteListener) {
+            this.list = list;
+            this.deleteListener = deleteListener;
+        }
+
+        @NonNull
+        @Override
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_cached_record, parent, false);
+            return new ViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+            CachedRecord item = list.get(position);
+            holder.tvRoom.setText(item.roomName);
+            String typeLabel;
+            if ("cold_water".equals(item.resourceType)) typeLabel = "💧冷水";
+            else if ("hot_water".equals(item.resourceType)) typeLabel = "🔥热水";
+            else typeLabel = "⚡电表";
+            holder.tvReading.setText(typeLabel);
+            holder.tvTime.setText(item.readDate + " " + item.readTime);
+            holder.tvStatus.setText("未上传");
+            holder.itemView.setOnLongClickListener(v -> {
+                if (deleteListener != null) {
+                    deleteListener.onDelete(item);
+                }
+                return true;
+            });
+        }
+
+        @Override
+        public int getItemCount() {
+            return list.size();
+        }
+
+        static class ViewHolder extends RecyclerView.ViewHolder {
+            TextView tvRoom, tvReading, tvTime, tvStatus;
+            ViewHolder(@NonNull View itemView) {
+                super(itemView);
+                tvRoom = itemView.findViewById(R.id.tv_room);
+                tvReading = itemView.findViewById(R.id.tv_reading);
+                tvTime = itemView.findViewById(R.id.tv_time);
+                tvStatus = itemView.findViewById(R.id.tv_status);
+            }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // 清理临时文件
     }
 }

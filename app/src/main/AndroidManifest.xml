@@ -43,7 +43,12 @@
 
         <!-- ===== 其他 Activity ===== -->
         <activity android:name=".DistributionActivity" />
-        <activity android:name=".SmartPhotoActivity" />
+        <activity 
+            android:name=".SmartPhotoActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
+            
         <activity android:name=".SmartReviewActivity" />
 
         <activity
