@@ -18,6 +18,7 @@
         android:background="#FFFFFF"
         android:paddingStart="4dp"
         android:paddingEnd="4dp"
+        android:elevation="2dp"
         android:layout_marginBottom="4dp">
 
         <ImageView
@@ -115,11 +116,11 @@
 
     </LinearLayout>
 
-    <!-- 拍照核心区 -->
+    <!-- 拍照预览区 -->
     <LinearLayout
-        android:id="@+id/ll_camera"
+        android:id="@+id/ll_camera_preview"
         android:layout_width="match_parent"
-        android:layout_height="180dp"
+        android:layout_height="120dp"
         android:orientation="vertical"
         android:gravity="center"
         android:background="#FFFFFF"
@@ -128,12 +129,11 @@
         android:layout_marginBottom="12dp"
         android:clickable="true"
         android:focusable="true"
-        android:backgroundTint="#FAFBFC"
         android:foreground="?attr/selectableItemBackground">
 
         <ImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:src="@drawable/ic_camera_large"
             android:tint="@color/text_hint" />
 
@@ -141,17 +141,8 @@
             android:id="@+id/tv_camera_hint"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="点击拍照"
-            android:textSize="16sp"
-            android:textColor="@color/text_hint"
-            android:layout_marginTop="8dp" />
-
-        <TextView
-            android:id="@+id/tv_camera_sub"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textSize="12sp"
+            android:text="点击下方拍照"
+            android:textSize="14sp"
             android:textColor="@color/text_hint"
             android:layout_marginTop="4dp" />
 
@@ -267,12 +258,11 @@
         android:layout_weight="1"
         android:nestedScrollingEnabled="false" />
 
-    <!-- 空状态 -->
     <TextView
         android:id="@+id/tv_empty_cached"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="暂无缓存数据\n点击上方拍照按钮开始抄表"
+        android:text="暂无缓存数据\n点击下方按钮开始抄表"
         android:textSize="13sp"
         android:textColor="@color/text_hint"
         android:gravity="center"
@@ -280,15 +270,15 @@
         android:visibility="gone"
         android:lineSpacingExtra="6dp" />
 
-    <!-- 底部固定按钮 -->
+    <!-- ===== 底部固定按钮 ===== -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:paddingStart="4dp"
         android:paddingEnd="4dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="12dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="16dp"
         android:background="#FFFFFF"
         android:elevation="8dp"
         android:layout_marginTop="8dp">
@@ -309,6 +299,19 @@
             android:layout_weight="1" />
 
         <Button
+            android:id="@+id/btn_take_photo"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:text="📸 拍照"
+            android:textSize="15sp"
+            android:backgroundTint="@color/primary_blue"
+            android:textColor="#FFFFFF"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:radius="24dp"
+            android:layout_marginEnd="8dp" />
+
+        <Button
             android:id="@+id/btn_submit_all"
             android:layout_width="wrap_content"
             android:layout_height="40dp"
@@ -317,8 +320,8 @@
             android:backgroundTint="@color/primary_blue"
             android:textColor="#FFFFFF"
             android:enabled="false"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
             android:radius="8dp" />
 
     </LinearLayout>

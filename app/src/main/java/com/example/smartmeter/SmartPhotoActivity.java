@@ -71,15 +71,16 @@ public class SmartPhotoActivity extends AppCompatActivity {
     private static final int MODE_BY_ROOM = 0;
     private static final int MODE_BY_TYPE = 1;
 
-    // ===== 新布局控件 =====
+    // ===== 布局控件 =====
     private TextView tvSelectedRoom, tvSelectedType, tvProgressLight;
-    private TextView tvCameraHint, tvCameraSub, tvNetworkStatus, tvCountBadge;
-    private LinearLayout llCamera;
+    private TextView tvCameraHint, tvNetworkStatus, tvCountBadge;
+    private LinearLayout llCameraPreview;
     private Button btnTypeElectric, btnTypeCold, btnTypeHot;
     private TextView btnClearAll;
-    private RecyclerView pendingRecyclerView;   // 修改：与布局ID一致
+    private RecyclerView pendingRecyclerView;
     private TextView tvEmptyCached;
     private Button btnSubmitAll;
+    private Button btnTakePhoto;   // 底部拍照按钮
 
     // ===== 状态变量 =====
     private SmartReadingDatabase db;
@@ -116,23 +117,22 @@ public class SmartPhotoActivity extends AppCompatActivity {
 
         db = SmartReadingDatabase.getInstance(this);
 
-        // ===== 初始化新布局控件 =====
+        // ===== 初始化控件 =====
         tvSelectedRoom = findViewById(R.id.tv_selected_room);
         tvSelectedType = findViewById(R.id.tv_selected_type);
         tvProgressLight = findViewById(R.id.tv_progress_light);
         tvCameraHint = findViewById(R.id.tv_camera_hint);
-        tvCameraSub = findViewById(R.id.tv_camera_sub);
         tvNetworkStatus = findViewById(R.id.tv_network_status);
         tvCountBadge = findViewById(R.id.tv_count_badge);
-        llCamera = findViewById(R.id.ll_camera);
+        llCameraPreview = findViewById(R.id.ll_camera_preview);
         btnTypeElectric = findViewById(R.id.btn_type_electric);
         btnTypeCold = findViewById(R.id.btn_type_cold);
         btnTypeHot = findViewById(R.id.btn_type_hot);
         btnClearAll = findViewById(R.id.btn_clear_all);
-        // 修正：使用 pendingRecyclerView
         pendingRecyclerView = findViewById(R.id.pendingRecyclerView);
         tvEmptyCached = findViewById(R.id.tv_empty_cached);
         btnSubmitAll = findViewById(R.id.btn_submit_all);
+        btnTakePhoto = findViewById(R.id.btn_take_photo);
 
         // ===== 设置 RecyclerView =====
         pendingRecyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -140,6 +140,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
             cachedList.remove(record);
             cachedAdapter.notifyDataSetChanged();
             updateUI();
+            checkNetworkStatus();
         });
         pendingRecyclerView.setAdapter(cachedAdapter);
 
@@ -151,7 +152,8 @@ public class SmartPhotoActivity extends AppCompatActivity {
 
         // ===== 点击事件 =====
         tvSelectedRoom.setOnClickListener(v -> showRoomSelectorDialog());
-        llCamera.setOnClickListener(v -> checkPermissionAndTakePhoto());
+        llCameraPreview.setOnClickListener(v -> checkPermissionAndTakePhoto());
+        btnTakePhoto.setOnClickListener(v -> checkPermissionAndTakePhoto());
 
         btnTypeElectric.setOnClickListener(v -> selectType(0));
         btnTypeCold.setOnClickListener(v -> selectType(1));
@@ -251,12 +253,12 @@ public class SmartPhotoActivity extends AppCompatActivity {
             btnSubmitAll.setEnabled(true);
             btnSubmitAll.setText("同步 " + count + " 条");
             btnClearAll.setVisibility(View.VISIBLE);
-            tvCameraSub.setText("已拍 " + count + " 张，点击同步上传");
+            tvCameraHint.setText("已拍 " + count + " 张");
         } else {
             btnSubmitAll.setEnabled(false);
             btnSubmitAll.setText("同步 0 条");
             btnClearAll.setVisibility(View.GONE);
-            tvCameraSub.setText("");
+            tvCameraHint.setText("点击下方按钮拍照");
         }
         if (cachedList.isEmpty()) {
             tvEmptyCached.setVisibility(View.VISIBLE);
@@ -301,8 +303,8 @@ public class SmartPhotoActivity extends AppCompatActivity {
                         selectedRoomId = roomList.get(0).getId();
                         selectedRoomName = roomList.get(0).getName();
                         tvSelectedRoom.setText(selectedRoomName);
-                        llCamera.setEnabled(true);
-                        tvCameraHint.setText("点击拍照");
+                        btnTakePhoto.setEnabled(true);
+                        tvCameraHint.setText("点击下方按钮拍照");
                     }
                 }
             } catch (Exception e) {
@@ -310,7 +312,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
             }
         } else {
             tvSelectedRoom.setText("加载中...");
-            llCamera.setEnabled(false);
+            btnTakePhoto.setEnabled(false);
         }
     }
 
@@ -364,8 +366,8 @@ public class SmartPhotoActivity extends AppCompatActivity {
                         selectedRoomId = roomList.get(0).getId();
                         selectedRoomName = roomList.get(0).getName();
                         tvSelectedRoom.setText(selectedRoomName);
-                        llCamera.setEnabled(true);
-                        tvCameraHint.setText("点击拍照");
+                        btnTakePhoto.setEnabled(true);
+                        tvCameraHint.setText("点击下方按钮拍照");
                     }
                     Toast.makeText(this, "已更新房间列表", Toast.LENGTH_SHORT).show();
                 });
@@ -758,7 +760,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
     }
 
     // ================================================================
-    // 内部类：适配器
+    // 适配器
     // ================================================================
     static class CachedRecordAdapter extends RecyclerView.Adapter<CachedRecordAdapter.ViewHolder> {
 
