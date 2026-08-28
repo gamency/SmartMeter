@@ -436,14 +436,12 @@
                         android:layout_marginBottom="@dimen/space_small" />
 
                     <!-- 趋势柱状图容器 -->
-                    <LinearLayout
-                        android:id="@+id/trend_container"
-                        android:layout_width="match_parent"
-                        android:layout_height="120dp"
-                        android:orientation="horizontal"
-                        android:gravity="bottom"
-                        android:paddingTop="8dp"
-                        android:clipChildren="false" />
+                    <!-- 趋势折线图 -->
+<com.github.mikephil.charting.charts.LineChart
+    android:id="@+id/line_chart_trend"
+    android:layout_width="match_parent"
+    android:layout_height="180dp"
+    android:layout_marginTop="4dp" />
 
                     <TextView
                         android:id="@+id/tv_trend_empty"

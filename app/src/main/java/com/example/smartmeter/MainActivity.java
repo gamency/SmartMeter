@@ -19,6 +19,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // ===== 隐藏 ActionBar =====
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
+
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
@@ -34,7 +39,6 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(intent);
                     return true;
                 } else if (item.getItemId() == R.id.nav_chat) {
-                    // 跳转到独立聊天页面
                     Intent intent = new Intent(MainActivity.this, ChatActivity.class);
                     startActivity(intent);
                     return true;
