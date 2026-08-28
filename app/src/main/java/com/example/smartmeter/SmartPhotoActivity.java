@@ -80,7 +80,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
     private RecyclerView pendingRecyclerView;
     private TextView tvEmptyCached;
     private Button btnSubmitAll;
-    private Button btnTakePhoto;   // 底部拍照按钮
+    private Button btnTakePhoto;
 
     // ===== 状态变量 =====
     private SmartReadingDatabase db;
@@ -90,7 +90,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
     private String currentPhotoPath;
     private int selectedRoomId = -1;
     private String selectedRoomName = "";
-    private int selectedTypeIndex = 0; // 0=电, 1=冷水, 2=热水
+    private int selectedTypeIndex = 0;
     private int currentMode = MODE_BY_TYPE;
     private boolean isContinuous = true;
     private boolean isAutoType = false;
@@ -203,7 +203,6 @@ public class SmartPhotoActivity extends AppCompatActivity {
         currentMode = prefs.getInt(KEY_MODE, MODE_BY_TYPE);
         isContinuous = prefs.getBoolean(KEY_CONTINUOUS, true);
         isAutoType = prefs.getBoolean(KEY_AUTO_TYPE, false);
-        // 更新模式UI（目前没有模式切换按钮在SmartPhotoActivity，但保留状态）
     }
 
     private void savePreferences() {
@@ -270,7 +269,6 @@ public class SmartPhotoActivity extends AppCompatActivity {
     }
 
     private void checkNetworkStatus() {
-        // 简单显示在线
         tvNetworkStatus.setText("📶 在线");
         tvNetworkStatus.setTextColor(ResourcesCompat.getColor(getResources(), R.color.success_green, null));
     }
@@ -406,8 +404,6 @@ public class SmartPhotoActivity extends AppCompatActivity {
     // 缓存记录加载
     // ================================================================
     private void loadCachedRecords() {
-        // 从内存加载（拍照后已添加到cachedList）
-        // 无需额外操作
         updateUI();
     }
 
@@ -595,7 +591,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
     }
 
     // ================================================================
-    // 连续拍照推进逻辑（简化，仅按表型模式推进同楼层下一个房间）
+    // 连续拍照推进逻辑（简化）
     // ================================================================
     private void advanceToNext() {
         if (roomList.isEmpty()) return;
@@ -610,7 +606,6 @@ public class SmartPhotoActivity extends AppCompatActivity {
 
         int currentFloor = roomList.get(roomPos).getFloor();
         int nextRoomPos = -1;
-        // 找同楼层下一个房间
         for (int i = roomPos + 1; i < roomList.size(); i++) {
             if (roomList.get(i).getFloor() == currentFloor) {
                 nextRoomPos = i;
@@ -618,7 +613,6 @@ public class SmartPhotoActivity extends AppCompatActivity {
             }
         }
         if (nextRoomPos != -1) {
-            // 跳到下一个房间，保持当前表型
             selectedRoomId = roomList.get(nextRoomPos).getId();
             selectedRoomName = roomList.get(nextRoomPos).getName();
             tvSelectedRoom.setText(selectedRoomName);
@@ -633,7 +627,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
     }
 
     // ================================================================
-    // 同步功能（批量提交）
+    // 同步功能（修复：使用 batch_upload 异步接口）
     // ================================================================
     private void syncRecords() {
         if (cachedList.isEmpty()) {
@@ -655,7 +649,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
                 obj.put("time_label", record.timeLabel);
                 obj.put("resource_type", record.resourceType != null ? record.resourceType : "electric");
                 obj.put("manual_reading", record.manualReading != null ? record.manualReading : JSONObject.NULL);
-                // 这里我们需要将本地照片转为Base64，但record中存储的是路径，需读取文件
+
                 File file = new File(record.photoPath);
                 if (file.exists()) {
                     byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
@@ -676,49 +670,69 @@ public class SmartPhotoActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 OkHttpClient client = new OkHttpClient.Builder()
-                        .connectTimeout(30, TimeUnit.SECONDS)
-                        .readTimeout(30, TimeUnit.SECONDS)
+                        .connectTimeout(15, TimeUnit.SECONDS)
+                        .readTimeout(15, TimeUnit.SECONDS)
                         .writeTimeout(30, TimeUnit.SECONDS)
                         .build();
+
                 JSONObject requestBody = new JSONObject();
                 requestBody.put("records", recordsArray);
+
                 RequestBody body = RequestBody.create(
                         MediaType.parse("application/json; charset=utf-8"),
                         requestBody.toString()
                 );
+
+                // ===== 使用 batch_upload 异步接口 =====
                 Request request = new Request.Builder()
-                        .url(Config.BASE_URL + "/api/smart/batch_sync")
+                        .url(Config.BASE_URL + "/api/smart/batch_upload")
                         .post(body)
                         .build();
-                Response response = client.newCall(request).execute();
-                if (response.isSuccessful()) {
-                    String jsonData = response.body().string();
-                    JSONObject result = new JSONObject(jsonData);
-                    String batchId = result.getString("batch_id");
-                    JSONArray resultsArray = result.getJSONArray("results");
 
-                    runOnUiThread(() -> {
-                        Toast.makeText(this, "✅ 同步成功！共 " + resultsArray.length() + " 条", Toast.LENGTH_SHORT).show();
-                        // 清空缓存
-                        cachedList.clear();
-                        cachedAdapter.notifyDataSetChanged();
-                        updateUI();
-                        // 跳转到复核界面
-                        Intent intent = new Intent(SmartPhotoActivity.this, SmartReviewActivity.class);
-                        intent.putExtra("batchId", batchId);
-                        startActivity(intent);
-                    });
-                } else {
-                    runOnUiThread(() -> {
-                        Toast.makeText(this, "同步失败: " + response.message(), Toast.LENGTH_SHORT).show();
+                Response response = client.newCall(request).execute();
+                String responseBody = response.body() != null ? response.body().string() : "空响应";
+
+                // ===== 修复：直接用 SmartPhotoActivity.this.runOnUiThread =====
+                runOnUiThread(() -> {
+                    if (response.isSuccessful()) {
+                        try {
+                            JSONObject result = new JSONObject(responseBody);
+                            String batchId = result.optString("batch_id");
+                            int count = result.optInt("uploaded_count", 0);
+                            String msg = result.optString("message", "提交成功");
+
+                            // 显示 batch_id 给用户
+                            Toast.makeText(SmartPhotoActivity.this,
+                                    "✅ " + msg + "\n批次: " + batchId.substring(0, 8) + "...",
+                                    Toast.LENGTH_LONG).show();
+
+                            // 清空缓存（同步已提交）
+                            cachedList.clear();
+                            cachedAdapter.notifyDataSetChanged();
+                            updateUI();
+                            checkNetworkStatus();
+
+                            // 跳转到复核页面
+                            Intent intent = new Intent(SmartPhotoActivity.this, SmartReviewActivity.class);
+                            intent.putExtra("batchId", batchId);
+                            startActivity(intent);
+
+                        } catch (Exception e) {
+                            Toast.makeText(SmartPhotoActivity.this, "解析响应失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            btnSubmitAll.setEnabled(true);
+                            btnSubmitAll.setText("同步 " + cachedList.size() + " 条");
+                        }
+                    } else {
+                        Toast.makeText(SmartPhotoActivity.this, "❌ 同步失败: HTTP " + response.code() + "\n" + responseBody,
+                                Toast.LENGTH_LONG).show();
                         btnSubmitAll.setEnabled(true);
                         btnSubmitAll.setText("同步 " + cachedList.size() + " 条");
-                    });
-                }
+                    }
+                });
             } catch (Exception e) {
                 e.printStackTrace();
                 runOnUiThread(() -> {
-                    Toast.makeText(this, "同步异常: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(SmartPhotoActivity.this, "❌ 同步异常: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     btnSubmitAll.setEnabled(true);
                     btnSubmitAll.setText("同步 " + cachedList.size() + " 条");
                 });

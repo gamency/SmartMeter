@@ -260,8 +260,8 @@ public class OverviewFragment extends Fragment {
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() -> {
                             tvTotalUsage.setText(String.format("%.1f 度", totalCross));
-                            tvTenantUsage.setText(String.format("%.1f 度", tenantCost));
-                            tvLandlordUsage.setText(String.format("%.1f 度", landlordCost));
+                            tvTenantUsage.setText("租户承担 " + String.format("%.1f 度", tenantCost));
+                            tvLandlordUsage.setText(String.format("房东承担 " +"%.1f 度", landlordCost));
                             tvPowerKwh.setText(String.format("%.1f 度", powerKwh));
                             tvMeterTotal.setText(String.format("%.1f 度", totalCross));
                             tvDiffValue.setText(String.format("%.1f 度", diff));
