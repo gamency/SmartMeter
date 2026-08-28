@@ -8,7 +8,7 @@ public class ChatMessage {
     private String role;
     private String content;
     private String createdAt;
-    private List<Map<String, Object>> steps;  // 必须是 List<Map<String, Object>>
+    private List<Map<String, Object>> steps;
 
     public ChatMessage(int id, String role, String content, String createdAt, List<Map<String, Object>> steps) {
         this.id = id;
@@ -23,5 +23,4 @@ public class ChatMessage {
     public String getContent() { return content; }
     public String getCreatedAt() { return createdAt; }
     public List<Map<String, Object>> getSteps() { return steps; }
-    public boolean hasSteps() { return steps != null && !steps.isEmpty(); }
 }

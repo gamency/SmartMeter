@@ -6,6 +6,7 @@
     android:gravity="start"
     android:paddingVertical="4dp">
 
+    <!-- 消息主体 -->
     <TextView
         android:id="@+id/tv_assistant_content"
         android:layout_width="wrap_content"
@@ -18,5 +19,41 @@
         android:radius="16dp"
         android:layout_marginEnd="32dp"
         android:lineSpacingExtra="6dp" />
+
+    <!-- 思考过程折叠区域 -->
+    <LinearLayout
+        android:id="@+id/ll_thinking"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="4dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tv_thinking_toggle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="💭 思考过程 ▶"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:padding="4dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground" />
+
+        <TextView
+            android:id="@+id/tv_thinking_steps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/bg"
+            android:padding="12dp"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:fontFamily="monospace"
+            android:visibility="gone"
+            android:lineSpacingExtra="2dp" />
+
+    </LinearLayout>
 
 </LinearLayout>

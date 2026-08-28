@@ -23,22 +23,20 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                Fragment fragment = null;
                 if (item.getItemId() == R.id.nav_overview) {
-                    fragment = new OverviewFragment();
+                    getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new OverviewFragment())
+                        .commit();
+                    return true;
                 } else if (item.getItemId() == R.id.nav_meter) {
-                    // 继续使用原有的 SmartPhotoActivity 独立页面
                     Intent intent = new Intent(MainActivity.this, SmartPhotoActivity.class);
                     startActivity(intent);
                     return true;
                 } else if (item.getItemId() == R.id.nav_chat) {
-                    fragment = new ChatFragment(); // 保持原有 Fragment
-                }
-                if (fragment != null) {
-                    getSupportFragmentManager()
-                        .beginTransaction()
-                        .replace(R.id.fragment_container, fragment)
-                        .commit();
+                    // 跳转到完整的对话页面
+                    Intent intent = new Intent(MainActivity.this, ChatActivity.class);
+                    startActivity(intent);
                     return true;
                 }
                 return false;
