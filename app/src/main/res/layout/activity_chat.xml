@@ -8,16 +8,18 @@
     android:fitsSystemWindows="true"
     android:background="@color/bg">
 
+    <!-- ===== 主内容区 ===== -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- 顶部 Toolbar -->
+        <!-- 顶部 Toolbar（白色） -->
         <androidx.appcompat.widget.Toolbar
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            style="@style/SmartMeterToolbar">
+            android:background="@color/surface"
+            android:elevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -40,7 +42,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="用电异常分析"
+                    android:text="对话"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
@@ -59,7 +61,11 @@
             </LinearLayout>
         </androidx.appcompat.widget.Toolbar>
 
-        <View style="@style/SmartMeterDivider" />
+        <!-- 分割线 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider" />
 
         <!-- 消息列表 -->
         <androidx.recyclerview.widget.RecyclerView
@@ -178,7 +184,7 @@
 
     </LinearLayout>
 
-    <!-- 侧边栏 -->
+    <!-- ===== 侧边栏 ===== -->
     <LinearLayout
         android:id="@+id/sidebar"
         android:layout_width="280dp"
@@ -189,6 +195,7 @@
         android:elevation="8dp"
         android:fitsSystemWindows="true">
 
+        <!-- 侧边栏头部 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -208,15 +215,20 @@
                 android:id="@+id/tv_sessions_count"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="13 个对话"
+                android:text="0 个对话"
                 android:textSize="14sp"
                 android:textColor="@color/text_secondary"
                 android:layout_marginTop="2dp" />
 
         </LinearLayout>
 
-        <View style="@style/SmartMeterDivider" />
+        <!-- 分割线 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider" />
 
+        <!-- 会话列表 -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_sessions"
             android:layout_width="match_parent"
