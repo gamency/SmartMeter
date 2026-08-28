@@ -131,8 +131,8 @@ public class SmartPhotoActivity extends AppCompatActivity {
         btnClearAll = findViewById(R.id.btn_clear_all);
         pendingRecyclerView = findViewById(R.id.pendingRecyclerView);
         tvEmptyCached = findViewById(R.id.tv_empty_cached);
-        btnSubmitAll = findViewById(R.id.btn_submit_all);
-        btnTakePhoto = findViewById(R.id.btn_take_photo);
+        btnSubmitAll = findViewById(R.id.syncBtn);
+        btnTakePhoto = findViewById(R.id.takePhotoBtn);
 
         // ===== 设置 RecyclerView =====
         pendingRecyclerView.setLayoutManager(new LinearLayoutManager(this));
