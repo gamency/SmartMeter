@@ -20,7 +20,6 @@
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="智能电表"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light"
@@ -39,7 +38,10 @@
         </activity>
 
         <!-- ===== 主界面 ===== -->
-        <activity android:name=".MainActivity" android:exported="true" />
+        <activity android:name=".MainActivity" 
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
 
         <!-- ===== 其他 Activity ===== -->
         <activity android:name=".DistributionActivity" />
