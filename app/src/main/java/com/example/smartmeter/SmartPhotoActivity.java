@@ -46,6 +46,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -137,10 +139,22 @@ public class SmartPhotoActivity extends AppCompatActivity {
         // ===== 设置 RecyclerView =====
         pendingRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         cachedAdapter = new CachedRecordAdapter(cachedList, record -> {
-            cachedList.remove(record);
-            cachedAdapter.notifyDataSetChanged();
-            updateUI();
-            checkNetworkStatus();
+            // 删除缓存（从数据库删除）
+            new Thread(() -> {
+                List<SmartReadingEntity> entities = db.smartReadingDao().getPendingReadings();
+                for (SmartReadingEntity entity : entities) {
+                    if (entity.photoPath != null && entity.photoPath.equals(record.photoPath)) {
+                        db.smartReadingDao().delete(entity);
+                        break;
+                    }
+                }
+                runOnUiThread(() -> {
+                    cachedList.remove(record);
+                    cachedAdapter.notifyDataSetChanged();
+                    updateUI();
+                    checkNetworkStatus();
+                });
+            }).start();
         });
         pendingRecyclerView.setAdapter(cachedAdapter);
 
@@ -167,10 +181,19 @@ public class SmartPhotoActivity extends AppCompatActivity {
                         .setTitle("确认清空")
                         .setMessage("确定要删除所有缓存记录吗？")
                         .setPositiveButton("清空", (d, w) -> {
-                            cachedList.clear();
-                            cachedAdapter.notifyDataSetChanged();
-                            updateUI();
-                            Toast.makeText(this, "已清空所有缓存", Toast.LENGTH_SHORT).show();
+                            // 从数据库删除所有待同步记录
+                            new Thread(() -> {
+                                List<SmartReadingEntity> pending = db.smartReadingDao().getPendingReadings();
+                                for (SmartReadingEntity entity : pending) {
+                                    db.smartReadingDao().delete(entity);
+                                }
+                                runOnUiThread(() -> {
+                                    cachedList.clear();
+                                    cachedAdapter.notifyDataSetChanged();
+                                    updateUI();
+                                    Toast.makeText(SmartPhotoActivity.this, "已清空所有缓存", Toast.LENGTH_SHORT).show();
+                                });
+                            }).start();
                         })
                         .setNegativeButton("取消", null)
                         .show();
@@ -181,7 +204,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
         loadRoomListFromCache();
         loadRoomListFromNetwork();
 
-        // ===== 加载本地缓存记录 =====
+        // ===== 加载本地缓存记录（从数据库） =====
         loadCachedRecords();
         updateUI();
         checkNetworkStatus();
@@ -190,6 +213,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        // 每次回到页面重新加载缓存
         loadCachedRecords();
         updateUI();
         checkNetworkStatus();
@@ -269,6 +293,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
     }
 
     private void checkNetworkStatus() {
+        // 简单显示在线
         tvNetworkStatus.setText("📶 在线");
         tvNetworkStatus.setTextColor(ResourcesCompat.getColor(getResources(), R.color.success_green, null));
     }
@@ -401,10 +426,34 @@ public class SmartPhotoActivity extends AppCompatActivity {
     }
 
     // ================================================================
-    // 缓存记录加载
+    // 从数据库加载缓存记录（修复 Bug 1）
     // ================================================================
     private void loadCachedRecords() {
-        updateUI();
+        new Thread(() -> {
+            List<SmartReadingEntity> pending = db.smartReadingDao().getPendingReadings();
+            runOnUiThread(() -> {
+                cachedList.clear();
+                for (SmartReadingEntity entity : pending) {
+                    // synced 字段在 SmartReadingEntity 中不存在，因为 status 为 pending，所以 synced 为 false
+                    CachedRecord record = new CachedRecord(
+                            entity.roomId,
+                            entity.roomName,
+                            entity.readDate,
+                            entity.readTime,
+                            entity.pointId,
+                            entity.timeLabel,
+                            entity.photoPath,
+                            entity.manualReading,
+                            false,   // synced 固定为 false，因为查询的是 pending 记录
+                            entity.status,
+                            entity.resourceType
+                    );
+                    cachedList.add(record);
+                }
+                cachedAdapter.notifyDataSetChanged();
+                updateUI();
+            });
+        }).start();
     }
 
     // ================================================================
@@ -546,7 +595,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
     }
 
     // ================================================================
-    // 保存读数到本地缓存（内存）
+    // 保存读数到本地数据库（修复 Bug 1：存入 Room 数据库）
     // ================================================================
     private void saveReading(String photoPath, Double manualValue) {
         Date now = new Date();
@@ -565,8 +614,11 @@ public class SmartPhotoActivity extends AppCompatActivity {
         else { pointId = 7; timeLabel = "深夜"; }
 
         String resourceType = getCurrentResourceType();
+        boolean isManual = (manualValue != null);
+        double manualReading = isManual ? manualValue : 0;
 
-        CachedRecord record = new CachedRecord(
+        // ===== 存入 Room 数据库 =====
+        SmartReadingEntity entity = new SmartReadingEntity(
                 selectedRoomId,
                 selectedRoomName,
                 dateSdf.format(now),
@@ -574,20 +626,38 @@ public class SmartPhotoActivity extends AppCompatActivity {
                 pointId,
                 timeLabel,
                 photoPath,
-                manualValue,
-                false,
+                manualReading,
                 "pending",
+                isManual,
                 resourceType
         );
-        cachedList.add(0, record);
-        cachedAdapter.notifyDataSetChanged();
-        updateUI();
-        Toast.makeText(this, "📸 已保存 (" + TYPE_LABELS[selectedTypeIndex] + ")", Toast.LENGTH_SHORT).show();
 
-        // 如果连续拍照开启，则自动推进
-        if (isContinuous) {
-            advanceToNext();
-        }
+        new Thread(() -> {
+            db.smartReadingDao().insert(entity);
+            runOnUiThread(() -> {
+                // 同时加到内存列表
+                CachedRecord record = new CachedRecord(
+                        selectedRoomId,
+                        selectedRoomName,
+                        dateSdf.format(now),
+                        timeSdf.format(now),
+                        pointId,
+                        timeLabel,
+                        photoPath,
+                        manualValue,
+                        false,
+                        "pending",
+                        resourceType
+                );
+                cachedList.add(0, record);
+                cachedAdapter.notifyDataSetChanged();
+                updateUI();
+                Toast.makeText(SmartPhotoActivity.this, "📸 已保存 (" + TYPE_LABELS[selectedTypeIndex] + ")", Toast.LENGTH_SHORT).show();
+                if (isContinuous) {
+                    advanceToNext();
+                }
+            });
+        }).start();
     }
 
     // ================================================================
@@ -627,7 +697,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
     }
 
     // ================================================================
-    // 同步功能（修复：使用 batch_upload 异步接口）
+    // 同步功能（修复 Bug 2：使用 batch_upload 异步接口，立即返回）
     // ================================================================
     private void syncRecords() {
         if (cachedList.isEmpty()) {
@@ -665,34 +735,42 @@ public class SmartPhotoActivity extends AppCompatActivity {
         }
 
         btnSubmitAll.setEnabled(false);
-        btnSubmitAll.setText("⏳ 同步中...");
+        btnSubmitAll.setText("⏳ 提交中...");
 
-        new Thread(() -> {
-            try {
-                OkHttpClient client = new OkHttpClient.Builder()
-                        .connectTimeout(15, TimeUnit.SECONDS)
-                        .readTimeout(15, TimeUnit.SECONDS)
-                        .writeTimeout(30, TimeUnit.SECONDS)
-                        .build();
+        // ===== 构建异步请求 =====
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(5, TimeUnit.SECONDS)   // 连接超时短一些
+                .readTimeout(3, TimeUnit.SECONDS)      // 快速失败
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .build();
 
-                JSONObject requestBody = new JSONObject();
-                requestBody.put("records", recordsArray);
+        JSONObject requestBody = new JSONObject();
+        try {
+            requestBody.put("records", recordsArray);
+        } catch (Exception e) {}
 
-                RequestBody body = RequestBody.create(
-                        MediaType.parse("application/json; charset=utf-8"),
-                        requestBody.toString()
-                );
+        Request request = new Request.Builder()
+                .url(Config.BASE_URL + "/api/smart/batch_upload")
+                .post(RequestBody.create(MediaType.parse("application/json; charset=utf-8"), requestBody.toString()))
+                .build();
 
-                // ===== 使用 batch_upload 异步接口 =====
-                Request request = new Request.Builder()
-                        .url(Config.BASE_URL + "/api/smart/batch_upload")
-                        .post(body)
-                        .build();
+        // ===== 使用 Callback 异步处理 =====
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                runOnUiThread(() -> {
+                    Toast.makeText(SmartPhotoActivity.this,
+                            "❌ 网络异常，请稍后重试: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                    btnSubmitAll.setEnabled(true);
+                    btnSubmitAll.setText("同步 " + cachedList.size() + " 条");
+                });
+            }
 
-                Response response = client.newCall(request).execute();
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
                 String responseBody = response.body() != null ? response.body().string() : "空响应";
 
-                // ===== 修复：直接用 SmartPhotoActivity.this.runOnUiThread =====
                 runOnUiThread(() -> {
                     if (response.isSuccessful()) {
                         try {
@@ -701,43 +779,44 @@ public class SmartPhotoActivity extends AppCompatActivity {
                             int count = result.optInt("uploaded_count", 0);
                             String msg = result.optString("message", "提交成功");
 
-                            // 显示 batch_id 给用户
+                            // ===== 立即显示 batch_id，不等待后续处理 =====
                             Toast.makeText(SmartPhotoActivity.this,
                                     "✅ " + msg + "\n批次: " + batchId.substring(0, 8) + "...",
                                     Toast.LENGTH_LONG).show();
 
-                            // 清空缓存（同步已提交）
-                            cachedList.clear();
-                            cachedAdapter.notifyDataSetChanged();
-                            updateUI();
-                            checkNetworkStatus();
+                            // ===== 清空本地缓存和数据库 =====
+                            new Thread(() -> {
+                                List<SmartReadingEntity> pending = db.smartReadingDao().getPendingReadings();
+                                for (SmartReadingEntity entity : pending) {
+                                    db.smartReadingDao().delete(entity);
+                                }
+                                runOnUiThread(() -> {
+                                    cachedList.clear();
+                                    cachedAdapter.notifyDataSetChanged();
+                                    updateUI();
+                                    checkNetworkStatus();
+                                });
+                            }).start();
 
-                            // 跳转到复核页面
-                            Intent intent = new Intent(SmartPhotoActivity.this, SmartReviewActivity.class);
-                            intent.putExtra("batchId", batchId);
-                            startActivity(intent);
+                            // 不跳转复核页面
 
                         } catch (Exception e) {
-                            Toast.makeText(SmartPhotoActivity.this, "解析响应失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(SmartPhotoActivity.this,
+                                    "❌ 解析响应失败: " + e.getMessage(),
+                                    Toast.LENGTH_SHORT).show();
                             btnSubmitAll.setEnabled(true);
                             btnSubmitAll.setText("同步 " + cachedList.size() + " 条");
                         }
                     } else {
-                        Toast.makeText(SmartPhotoActivity.this, "❌ 同步失败: HTTP " + response.code() + "\n" + responseBody,
+                        Toast.makeText(SmartPhotoActivity.this,
+                                "❌ 同步失败: HTTP " + response.code() + "\n" + responseBody,
                                 Toast.LENGTH_LONG).show();
                         btnSubmitAll.setEnabled(true);
                         btnSubmitAll.setText("同步 " + cachedList.size() + " 条");
                     }
                 });
-            } catch (Exception e) {
-                e.printStackTrace();
-                runOnUiThread(() -> {
-                    Toast.makeText(SmartPhotoActivity.this, "❌ 同步异常: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    btnSubmitAll.setEnabled(true);
-                    btnSubmitAll.setText("同步 " + cachedList.size() + " 条");
-                });
             }
-        }).start();
+        });
     }
 
     // ================================================================

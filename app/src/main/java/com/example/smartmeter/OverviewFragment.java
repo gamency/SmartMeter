@@ -21,6 +21,7 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +52,9 @@ public class OverviewFragment extends Fragment {
     private TextView tagMonth, tagLastMonth, tag30d, tag90d;
     private TextView btnCustomDate;
 
+    // 租金卡片
+    private TextView tvTotalRent, tvReceivedRent, tvPendingRent;
+
     // 日期变量
     private String periodStart = "";
     private String periodEnd = "";
@@ -79,6 +83,11 @@ public class OverviewFragment extends Fragment {
         trendContainer = view.findViewById(R.id.trend_container);
         tvTrendEmpty = view.findViewById(R.id.tv_trend_empty);
 
+        // 租金卡片
+        tvTotalRent = view.findViewById(R.id.tv_total_rent);
+        tvReceivedRent = view.findViewById(R.id.tv_received_rent);
+        tvPendingRent = view.findViewById(R.id.tv_pending_rent);
+
         tagMonth = view.findViewById(R.id.tag_month);
         tagLastMonth = view.findViewById(R.id.tag_last_month);
         tag30d = view.findViewById(R.id.tag_30d);
@@ -94,7 +103,7 @@ public class OverviewFragment extends Fragment {
         // 自定义日期按钮
         btnCustomDate.setOnClickListener(v -> showDatePickerDialog());
 
-        // ===== 查看完整账单点击 =====
+        // 查看完整账单点击
         TextView tvViewFull = view.findViewById(R.id.tv_view_full);
         if (tvViewFull != null) {
             tvViewFull.setOnClickListener(v -> {
@@ -104,7 +113,7 @@ public class OverviewFragment extends Fragment {
         }
 
         // 更新时间
-        updateTime.setText("更新于 " + new SimpleDateFormat("HH:mm", Locale.CHINA).format(new java.util.Date()));
+        updateTime.setText("更新于 " + new SimpleDateFormat("HH:mm", Locale.CHINA).format(new Date()));
 
         // 加载数据
         refreshAllData();
@@ -136,7 +145,6 @@ public class OverviewFragment extends Fragment {
                                 periodStart = start;
                                 periodEnd = end;
                                 tvPeriod.setText(periodStart + " ~ " + periodEnd);
-                                // 取消所有标签的选中状态
                                 TextView[] tags = {tagMonth, tagLastMonth, tag30d, tag90d};
                                 for (TextView tag : tags) {
                                     tag.setSelected(false);
@@ -226,6 +234,7 @@ public class OverviewFragment extends Fragment {
         fetchDashboardData();
         fetchDistribution();
         fetchTrend();
+        fetchFinancialOverview();  // 租金数据
     }
 
     // ===== API：核心指标 =====
@@ -261,7 +270,7 @@ public class OverviewFragment extends Fragment {
                         getActivity().runOnUiThread(() -> {
                             tvTotalUsage.setText(String.format("%.1f 度", totalCross));
                             tvTenantUsage.setText("租户承担 " + String.format("%.1f 度", tenantCost));
-                            tvLandlordUsage.setText(String.format("房东承担 " +"%.1f 度", landlordCost));
+                            tvLandlordUsage.setText("房东承担 " + String.format("%.1f 度", landlordCost));
                             tvPowerKwh.setText(String.format("%.1f 度", powerKwh));
                             tvMeterTotal.setText(String.format("%.1f 度", totalCross));
                             tvDiffValue.setText(String.format("%.1f 度", diff));
@@ -338,10 +347,10 @@ public class OverviewFragment extends Fragment {
                             }
                             tvEmptyTenant.setVisibility(View.GONE);
 
+                            // 只取前5条
                             items.sort((a, b) -> Double.compare(b.usage, a.usage));
-                            int count = Math.min(items.size(), 10);
+                            int count = Math.min(items.size(), 5);
 
-                            // 单色渐变：全部使用 primary
                             for (int i = 0; i < count; i++) {
                                 RoomItem item = items.get(i);
                                 double ratio = item.usage / finalMaxKwh;
@@ -350,7 +359,6 @@ public class OverviewFragment extends Fragment {
                                 View barFill = barView.findViewById(R.id.bar_fill);
                                 TextView valueView = barView.findViewById(R.id.bar_value);
                                 nameView.setText(item.name);
-                                // 全部使用 primary，根据排名调整透明度（可选）
                                 barFill.setBackgroundColor(getResources().getColor(R.color.primary));
                                 barFill.getLayoutParams().width = (int) (ratio * 300) + 20;
                                 valueView.setText(String.format("%.1f", item.usage));
@@ -430,7 +438,6 @@ public class OverviewFragment extends Fragment {
                                 int height = (int) (ratio * 100) + 10;
                                 barFill.getLayoutParams().height = height;
 
-                                // 峰值用橙色，其余用 primary
                                 if (item.value == finalMaxVal) {
                                     barFill.setBackgroundColor(0xFFF59E0B);
                                 } else {
@@ -456,6 +463,56 @@ public class OverviewFragment extends Fragment {
                     getActivity().runOnUiThread(() ->
                             Toast.makeText(getContext(), "趋势网络异常: " + e.getMessage(), Toast.LENGTH_SHORT).show());
                 }
+            }
+        }).start();
+    }
+
+    // ===== 获取本月租金数据（修复 URL） =====
+    // ===== 获取本月租金数据（统一使用 /financial/api/overview） =====
+    private void fetchFinancialOverview() {
+        new Thread(() -> {
+            try {
+                // 获取当前年份和月份（不带前导零）
+                String month = new SimpleDateFormat("M", Locale.CHINA).format(new Date());
+                String year = new SimpleDateFormat("yyyy", Locale.CHINA).format(new Date());
+
+                // ===== 使用统一接口 =====
+                String url = BASE_URL + "/financial/api/overview?year=" + year + "&month=" + month;
+                Log.d(TAG, "请求URL(租金): " + url);
+
+                OkHttpClient client = new OkHttpClient.Builder()
+                        .connectTimeout(10, TimeUnit.SECONDS)
+                        .readTimeout(10, TimeUnit.SECONDS)
+                        .build();
+                Request request = new Request.Builder()
+                        .url(url)
+                        .get()
+                        .build();
+                Response response = client.newCall(request).execute();
+                Log.d(TAG, "响应码(租金): " + response.code());
+
+                if (response.isSuccessful()) {
+                    String jsonData = response.body().string();
+                    Log.d(TAG, "响应数据(租金): " + jsonData);
+                    JSONObject json = new JSONObject(jsonData);
+
+                    // ===== 解析统一接口返回的字段 =====
+                    double receivable = json.optDouble("total_receivable", 0);
+                    double received = json.optDouble("total_received", 0);
+                    double gap = json.optDouble("gap", 0);
+
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            tvTotalRent.setText("￥" + String.format("%,.2f", receivable));
+                            tvReceivedRent.setText("￥" + String.format("%,.2f", received));
+                            tvPendingRent.setText("￥" + String.format("%,.2f", gap));
+                        });
+                    }
+                } else {
+                    Log.e(TAG, "租金请求失败: " + response.code());
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "租金请求异常: ", e);
             }
         }).start();
     }
