@@ -434,7 +434,6 @@ public class SmartPhotoActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 cachedList.clear();
                 for (SmartReadingEntity entity : pending) {
-                    // synced 字段在 SmartReadingEntity 中不存在，因为 status 为 pending，所以 synced 为 false
                     CachedRecord record = new CachedRecord(
                             entity.roomId,
                             entity.roomName,
@@ -853,7 +852,7 @@ public class SmartPhotoActivity extends AppCompatActivity {
     }
 
     // ================================================================
-    // 适配器
+    // 适配器（含单条删除功能）
     // ================================================================
     static class CachedRecordAdapter extends RecyclerView.Adapter<CachedRecordAdapter.ViewHolder> {
 
@@ -888,11 +887,20 @@ public class SmartPhotoActivity extends AppCompatActivity {
             holder.tvReading.setText(typeLabel);
             holder.tvTime.setText(item.readDate + " " + item.readTime);
             holder.tvStatus.setText("未上传");
+
+            // ===== 长按删除（保留） =====
             holder.itemView.setOnLongClickListener(v -> {
                 if (deleteListener != null) {
                     deleteListener.onDelete(item);
                 }
                 return true;
+            });
+
+            // ===== 点击删除按钮（新增） =====
+            holder.btnDelete.setOnClickListener(v -> {
+                if (deleteListener != null) {
+                    deleteListener.onDelete(item);
+                }
             });
         }
 
@@ -902,13 +910,14 @@ public class SmartPhotoActivity extends AppCompatActivity {
         }
 
         static class ViewHolder extends RecyclerView.ViewHolder {
-            TextView tvRoom, tvReading, tvTime, tvStatus;
+            TextView tvRoom, tvReading, tvTime, tvStatus, btnDelete;
             ViewHolder(@NonNull View itemView) {
                 super(itemView);
                 tvRoom = itemView.findViewById(R.id.tv_room);
                 tvReading = itemView.findViewById(R.id.tv_reading);
                 tvTime = itemView.findViewById(R.id.tv_time);
                 tvStatus = itemView.findViewById(R.id.tv_status);
+                btnDelete = itemView.findViewById(R.id.btn_delete);
             }
         }
     }

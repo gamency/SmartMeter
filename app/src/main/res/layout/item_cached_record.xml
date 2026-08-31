@@ -4,60 +4,58 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingVertical="12dp"
-    android:background="?android:attr/selectableItemBackground">
+    android:padding="12dp"
+    android:background="?android:attr/selectableItemBackground"
+    android:minHeight="56dp">
 
-    <!-- 缩略图 -->
-    <ImageView
-        android:id="@+id/iv_thumbnail"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:scaleType="centerCrop"
-        android:background="#EEEEEE" />
-
-    <!-- 信息 -->
-    <LinearLayout
+    <TextView
+        android:id="@+id/tv_room"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="vertical"
-        android:layout_marginStart="12dp">
+        android:text="201"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary" />
 
-        <TextView
-            android:id="@+id/tv_room"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="201室"
-            style="@style/TextBody"
-            android:textColor="@color/text_primary" />
+    <TextView
+        android:id="@+id/tv_reading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="⚡电表"
+        android:textSize="13sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginStart="8dp" />
 
-        <TextView
-            android:id="@+id/tv_reading"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="123.45 度"
-            style="@style/TextSmall" />
+    <TextView
+        android:id="@+id/tv_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="2026-08-31 10:30"
+        android:textSize="12sp"
+        android:textColor="@color/text_hint"
+        android:layout_marginStart="8dp" />
 
-        <TextView
-            android:id="@+id/tv_time"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="2026-07-12 14:30"
-            style="@style/TextSmall" />
-
-    </LinearLayout>
-
-    <!-- 未上传标签 -->
     <TextView
         android:id="@+id/tv_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="未上传"
         android:textSize="11sp"
-        android:textColor="@color/warning_orange"
-        android:background="@color/warning_orange_light"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="2dp"
-        android:radius="4dp" />
+        android:textColor="@color/warning"
+        android:layout_marginStart="12dp" />
+
+    <TextView
+        android:id="@+id/btn_delete"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:text="×"
+        android:textSize="20sp"
+        android:textColor="@color/danger"
+        android:gravity="center"
+        android:background="?attr/selectableItemBackground"
+        android:layout_marginStart="8dp"
+        android:clickable="true"
+        android:focusable="true" />
 
 </LinearLayout>
