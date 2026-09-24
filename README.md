@@ -3,11 +3,11 @@
 ## 项目概述
 
 **智能电表抄表助手**SmartMeter 是一款专为出租屋电费管理设计的Android移动应用。通过连接后端电力统计系统，实现电费数据的可视化展示、智能抄表拍照、分户用电统计等功能。
-— 基于 RAG + Agent 的电表管理智能助手
-Agent 编排：LangGraph 状态机 + 工具调用（电表查询、工单创建、用量分析）
-RAG：结合静态文档 ingestion + LLM Wiki 动态维护 +引用溯源
-评估：答案评估集 + badcase 记录
-成本护栏：意图路由（简单query走小模型），token成本/延迟记录
+- 基于 RAG + Agent 的电表管理智能助手
+- Agent 编排：LangGraph 状态机 + 工具调用（电表查询、工单创建、用量分析）
+- RAG：结合静态文档 ingestion + LLM Wiki 动态维护 +引用溯源
+- 评估：答案评估集 + badcase 记录
+- 成本护栏：意图路由（简单query走小模型），token成本/延迟记录
 
 
 ## 🎯 核心功能
